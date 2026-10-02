@@ -139,9 +139,17 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     parameters.addParameter(new FilterParameter(STR16("Air up to"), kHighEdgeParam, true));
 
     // VOICES: tones per band, 1..8, stepped by the display's up and down buttons
-    parameters.addParameter(STR16("Voices"), nullptr, Reducer::kVoices - 1,
-                            Reducer::voicesNorm(Reducer::kVoicesDefault), Vst::ParameterInfo::kCanAutomate,
-                            kVoicesParam);
+    auto* voices = new Vst::StringListParameter(STR16("Voices"), kVoicesParam, nullptr,
+                                                Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
+    for (int v = 1; v <= Reducer::kVoices; ++v)
+    {
+        Vst::String128 label;
+        UString(label, str16BufferSize(Vst::String128)).printInt(v);
+        voices->appendString(label);
+    }
+    voices->getInfo().defaultNormalizedValue = Reducer::voicesNorm(Reducer::kVoicesDefault);
+    voices->setNormalized(Reducer::voicesNorm(Reducer::kVoicesDefault));
+    parameters.addParameter(voices);
 
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
