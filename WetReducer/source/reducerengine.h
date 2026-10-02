@@ -71,11 +71,13 @@ inline int xoverNote(double norm)
     return kXoverLowNote + static_cast<int>(std::lround(std::clamp(norm, 0.0, 1.0) * kXoverNotes));
 }
 inline double xoverHz(int /*i*/, double norm) { return noteHz(xoverNote(norm)); }
-// The output filters share the crossovers' note range and are out of circuit at its ends.
-inline double hpfOffHz() { return noteHz(kXoverLowNote); }
-inline double lpfOffHz() { return noteHz(kXoverLowNote + kXoverNotes); }
-inline bool hpfOn(double hz) { return hz > hpfOffHz() * 1.01; }
-inline bool lpfOn(double hz) { return hz < lpfOffHz() * 0.99; }
+// BASS's low edge and AIR's high edge share the crossovers' note range; at its ends they are off
+// and the bands reach the bottom and the top. Outside an edge the music passes as it is, so
+// BASS does not have to follow everything from 30 Hz up.
+inline double edgeBottomHz() { return noteHz(kXoverLowNote); }
+inline double edgeTopHz() { return noteHz(kXoverLowNote + kXoverNotes); }
+inline bool lowEdgeOn(double hz) { return hz > edgeBottomHz() * 1.01; }
+inline bool highEdgeOn(double hz) { return hz < edgeTopHz() * 0.99; }
 inline double xoverNorm(int /*i*/, double hz)
 {
     const int midi = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(std::max(hz, 1.0) / 440.0)));
@@ -175,8 +177,8 @@ public:
                                                     Reducer::kXoverDefaultHz[2], Reducer::kXoverDefaultHz[3]}};
         std::array<bool, Reducer::kBands> solo{};
         int response = Reducer::kResponseDefault;
-        double hpf = Reducer::hpfOffHz();
-        double lpf = Reducer::lpfOffHz();
+        double lowEdge = Reducer::edgeBottomHz();
+        double highEdge = Reducer::edgeTopHz();
     };
 
     void prepare(double sampleRate);
@@ -189,15 +191,16 @@ public:
 
 private:
     void applyXovers(bool resetTrackers);
-    void applyFilters();
 
     double fs = 44100.0;
     Settings current;
     Splitter trackSplit;            // mono, undelayed: feeds the trackers
     Splitter drySplit[2];           // per channel, delayed: the music that is played
     std::array<BandTone, Reducer::kBands> tones;
-    LR4 hp[2], lp[2];               // per channel, on the output
-    bool hpOn = false, lpOn = false;
+    // The band edges: the trackers see only the band, the music outside an edge passes as it is.
+    LR4 lowTrack, highTrack;                     // mono, undelayed: BASS above its edge, AIR below its edge
+    LR4 lowDryLo[2], lowDryHi[2], highDryLo[2], highDryHi[2];
+    bool lowOn = false, highOn = false;
     std::vector<float> delay[2];
     int delayPos = 0;
 };

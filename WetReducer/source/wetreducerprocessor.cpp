@@ -67,10 +67,10 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.solo[id - kSoloParam] = value > 0.5;
     else if (id == kResponseParam)
         pending.response = Reducer::responseIndex(value);
-    else if (id == kHpfParam)
-        pending.hpf = Reducer::xoverHz(0, value);
-    else if (id == kLpfParam)
-        pending.lpf = Reducer::xoverHz(0, value);
+    else if (id == kLowEdgeParam)
+        pending.lowEdge = Reducer::xoverHz(0, value);
+    else if (id == kHighEdgeParam)
+        pending.highEdge = Reducer::xoverHz(0, value);
 }
 
 // The lamps flash each time a band's tone moves to a new note, brighter the further its knob is
@@ -179,9 +179,9 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         {
             double hz = 0.0;
             if (s.readDouble(hz))
-                st.hpf = std::clamp(hz, Reducer::hpfOffHz(), Reducer::lpfOffHz());
+                st.lowEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
             if (s.readDouble(hz))
-                st.lpf = std::clamp(hz, Reducer::hpfOffHz(), Reducer::lpfOffHz());
+                st.highEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
         }
     }
     pending = st;
@@ -202,8 +202,8 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     for (bool on : pending.solo)
         s.writeInt32(on ? 1 : 0);
     s.writeInt32(pending.response);
-    s.writeDouble(pending.hpf);
-    s.writeDouble(pending.lpf);
+    s.writeDouble(pending.lowEdge);
+    s.writeDouble(pending.highEdge);
     return kResultOk;
 }
 

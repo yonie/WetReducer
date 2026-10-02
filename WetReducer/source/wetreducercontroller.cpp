@@ -56,7 +56,7 @@ public:
 private:
     int index;
 };
-// An output filter on the crossovers' note grid, "Off" at its own end of the strip.
+// A band edge on the crossovers' note grid, "Off" at its own end of the strip.
 class FilterParameter : public XoverParameter
 {
 public:
@@ -68,7 +68,7 @@ public:
     void toString(Vst::ParamValue normalized, Vst::String128 string) const SMTG_OVERRIDE
     {
         const double hz = Reducer::xoverHz(0, normalized);
-        if (high ? !Reducer::lpfOn(hz) : !Reducer::hpfOn(hz))
+        if (high ? !Reducer::highEdgeOn(hz) : !Reducer::lowEdgeOn(hz))
             UString(string, str16BufferSize(Vst::String128)).fromAscii("Off");
         else
             XoverParameter::toString(normalized, string);
@@ -131,8 +131,8 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     for (int b = 0; b < Reducer::kBands; ++b)
         parameters.addParameter(leds[b], nullptr, 0, 0.0, Vst::ParameterInfo::kIsReadOnly, kLedParam + b);
 
-    parameters.addParameter(new FilterParameter(STR16("Highpass"), kHpfParam, false));
-    parameters.addParameter(new FilterParameter(STR16("Lowpass"), kLpfParam, true));
+    parameters.addParameter(new FilterParameter(STR16("Bass from"), kLowEdgeParam, false));
+    parameters.addParameter(new FilterParameter(STR16("Air up to"), kHighEdgeParam, true));
 
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
@@ -274,9 +274,9 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
     {
         double hz = 0.0;
         if (s.readDouble(hz))
-            setParamNormalized(kHpfParam, Reducer::xoverNorm(0, hz));
+            setParamNormalized(kLowEdgeParam, Reducer::xoverNorm(0, hz));
         if (s.readDouble(hz))
-            setParamNormalized(kLpfParam, Reducer::xoverNorm(0, hz));
+            setParamNormalized(kHighEdgeParam, Reducer::xoverNorm(0, hz));
     }
     return kResultOk;
 }

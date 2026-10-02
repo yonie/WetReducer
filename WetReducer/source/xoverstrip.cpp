@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------
 // Copyright(c) 2026 Yonie.
 //------------------------------------------------------------------------
 
@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstring>
 
 using namespace VSTGUI;
 
@@ -47,7 +48,7 @@ XoverStrip::XoverStrip(const CRect& size, Steinberg::Vst::EditController* c) : C
     // Follow the parameters (host automation, a loaded session) without a listener per tag.
     timer = makeOwned<CVSTGUITimer>([this](CVSTGUITimer*) {
         bool changed = false;
-        const int watched[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, kHpfParam, kLpfParam};
+        const int watched[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, kLowEdgeParam, kHighEdgeParam};
         for (int i : watched)
         {
             const double v = controller->getParamNormalized(static_cast<Steinberg::Vst::ParamID>(i));
@@ -71,14 +72,24 @@ XoverStrip::~XoverStrip()
 CRect XoverStrip::track() const
 {
     CRect r = getViewSize();
-    r.top += 22;           // crossover readouts above
-    r.bottom -= 40;        // the filter row and the frequency scale below
+    r.top += 22;           // handle readouts above
+    r.bottom -= 18;        // frequency scale below
     return r;
 }
 
-double XoverStrip::filterHz(int which) const
+// Six handles on one grid, left to right: BASS's low edge, the four crossovers, AIR's high edge.
+Steinberg::Vst::ParamID XoverStrip::paramOf(int handle)
 {
-    return Reducer::xoverHz(0, controller->getParamNormalized(which == 0 ? kHpfParam : kLpfParam));
+    if (handle == 0)
+        return kLowEdgeParam;
+    if (handle == kHandles - 1)
+        return kHighEdgeParam;
+    return static_cast<Steinberg::Vst::ParamID>(kXoverParam + handle - 1);
+}
+
+int XoverStrip::noteOf(int handle) const
+{
+    return Reducer::xoverNote(controller->getParamNormalized(paramOf(handle)));
 }
 
 double XoverStrip::hzAt(double x) const
@@ -94,11 +105,6 @@ double XoverStrip::xAt(double hz) const
     return t.left + t.getWidth() * std::log(std::clamp(hz, kLo, kHi) / kLo) / std::log(kHi / kLo);
 }
 
-double XoverStrip::hzOf(int i) const
-{
-    return Reducer::xoverHz(i, controller->getParamNormalized(kXoverParam + i));
-}
-
 void XoverStrip::draw(CDrawContext* ctx)
 {
     const CRect t = track();
@@ -106,17 +112,32 @@ void XoverStrip::draw(CDrawContext* ctx)
     ctx->setFillColor(kTrack);
     ctx->drawRect(t, kDrawFilled);
 
-    // the four bands between the handles
+    // The five bands between the handles. Below BASS's low edge and above AIR's high edge the
+    // music passes as it is, so the strip stays plain there; at the strip's ends the edges are off.
+    double hz[kHandles];
+    for (int h = 0; h < kHandles; ++h)
+        hz[h] = Reducer::noteHz(noteOf(h));
     double edge[Reducer::kBands + 1];
-    edge[0] = kLo;
-    for (int i = 0; i < Reducer::kXovers; ++i)
-        edge[i + 1] = hzOf(i);
-    edge[Reducer::kBands] = kHi;
+    for (int h = 0; h < kHandles; ++h)
+        edge[h] = hz[h];
+    if (!Reducer::lowEdgeOn(hz[0]))
+        edge[0] = kLo;
+    if (!Reducer::highEdgeOn(hz[kHandles - 1]))
+        edge[Reducer::kBands] = kHi;
     auto font = makeOwned<CFontDesc>("Arial", 11, kBoldFace);
     ctx->setFont(font);
+    // seven segments: the outer two are bypass, the music there passes as it is
+    ctx->setFontColor(kDim);
+    const CRect lowPass(t.left, t.top, xAt(edge[0]), t.bottom), highPass(xAt(edge[Reducer::kBands]), t.top, t.right, t.bottom);
+    if (lowPass.getWidth() > 60)
+        ctx->drawString("BYPASS", lowPass, kCenterText);
+    if (highPass.getWidth() > 60)
+        ctx->drawString("BYPASS", highPass, kCenterText);
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         CRect band(xAt(edge[b]), t.top, xAt(edge[b + 1]), t.bottom);
+        if (band.getWidth() <= 0)
+            continue;
         // the band's colour, stronger the further its knob is turned
         CColor c = kBand[b];
         c.alpha = static_cast<uint8_t>(40 + 200 * controller->getParamNormalized(kBandParam + b));
@@ -127,50 +148,9 @@ void XoverStrip::draw(CDrawContext* ctx)
             ctx->drawString(kBandName[b], band, kCenterText);
     }
 
-    // what the output filters cut, darkened
-    auto small = makeOwned<CFontDesc>("Arial", 10);
-    const double hpX = xAt(filterHz(0)), lpX = xAt(filterHz(1));
-    ctx->setFillColor(CColor(0, 0, 0, 170));
-    if (Reducer::hpfOn(filterHz(0)))
-        ctx->drawRect(CRect(t.left, t.top, hpX, t.bottom), kDrawFilled);
-    if (Reducer::lpfOn(filterHz(1)))
-        ctx->drawRect(CRect(lpX, t.top, t.right, t.bottom), kDrawFilled);
-
-    // the filter handles, in a row under the strip: HPF from the left end, LPF from the right
-    const double rowTop = t.bottom + 2, rowBottom = t.bottom + 18;
-    ctx->setFont(small);
-    for (int which = 0; which < 2; ++which)
-    {
-        const double hz = filterHz(which);
-        const double x = which == 0 ? hpX : lpX;
-        const bool on = which == 0 ? Reducer::hpfOn(hz) : Reducer::lpfOn(hz);
-        const CColor colour = on ? kInk : kDim;
-        ctx->setFrameColor(colour);
-        ctx->setLineWidth(which + 4 == dragging ? 3 : 2);
-        if (on)
-            ctx->drawLine(CPoint(x, t.top), CPoint(x, rowTop));
-        auto tab = owned(ctx->createGraphicsPath());
-        if (tab)
-        {
-            tab->beginSubpath(CPoint(x, rowTop));
-            tab->addLine(CPoint(x + 7, rowBottom - 4));
-            tab->addLine(CPoint(x - 7, rowBottom - 4));
-            tab->closeSubpath();
-            ctx->setFillColor(colour);
-            ctx->drawGraphicsPath(tab, CDrawContext::kPathFilled);
-        }
-        char text[48], note[32];
-        noteName(hz, note, sizeof(note));
-        std::snprintf(text, sizeof(text), "%s  %s", which == 0 ? "HPF" : "LPF", on ? note : "off");
-        ctx->setFontColor(colour);
-        if (which == 0)
-            ctx->drawString(text, CRect(x + 10, rowTop, x + 140, rowBottom), kLeftText);
-        else
-            ctx->drawString(text, CRect(x - 140, rowTop, x - 10, rowBottom), kRightText);
-    }
-
     // scale
-    const double scaleTop = rowBottom + 4;
+    auto small = makeOwned<CFontDesc>("Arial", 10);
+    ctx->setFont(small);
     ctx->setFontColor(kDim);
     ctx->setFrameColor(kRule);
     ctx->setLineWidth(1);
@@ -179,26 +159,38 @@ void XoverStrip::draw(CDrawContext* ctx)
     for (int i = 0; i < 8; ++i)
     {
         const double x = xAt(ticks[i]);
-        ctx->drawLine(CPoint(x, scaleTop - 3), CPoint(x, scaleTop + 1));
-        ctx->drawString(tickName[i], CRect(x - 20, scaleTop + 1, x + 20, scaleTop + 15), kCenterText);
+        ctx->drawLine(CPoint(x, t.bottom), CPoint(x, t.bottom + 4));
+        ctx->drawString(tickName[i], CRect(x - 20, t.bottom + 4, x + 20, t.bottom + 18), kCenterText);
     }
-    ctx->drawString("30 Hz", CRect(t.left, scaleTop + 1, t.left + 40, scaleTop + 15), kLeftText);
-    ctx->drawString("16 kHz", CRect(t.right - 40, scaleTop + 1, t.right, scaleTop + 15), kRightText);
+    ctx->drawString("30 Hz", CRect(t.left, t.bottom + 4, t.left + 40, t.bottom + 18), kLeftText);
+    ctx->drawString("16 kHz", CRect(t.right - 40, t.bottom + 4, t.right, t.bottom + 18), kRightText);
 
-    // handles with their readouts
-    for (int i = 0; i < Reducer::kXovers; ++i)
+    // the handles, all alike, with their readouts; handles close together show the note only
+    double xs[kHandles];
+    for (int h = 0; h < kHandles; ++h)
+        xs[h] = xAt(hz[h]);
+    for (int h = 0; h < kHandles; ++h)
     {
-        const double x = xAt(edge[i + 1]);
+        const double x = xs[h];
+        const bool crowded = (h > 0 && x - xs[h - 1] < 95) || (h < kHandles - 1 && xs[h + 1] - x < 95);
         ctx->setFrameColor(kHandle);
-        ctx->setLineWidth(i == dragging ? 4 : 3);
+        ctx->setLineWidth(h == dragging ? 4 : 3);
         ctx->drawLine(CPoint(x, t.top - 4), CPoint(x, t.bottom));
         ctx->setFillColor(kHandle);
         ctx->drawRect(CRect(x - 6, t.top - 8, x + 6, t.top), kDrawFilled);
         char text[32];
-        noteName(edge[i + 1], text, sizeof(text));
+        noteName(hz[h], text, sizeof(text));
+        if (crowded)
+            *std::strchr(text, ' ') = 0;      // "F2  87 Hz" -> "F2"
         ctx->setFont(small);
         ctx->setFontColor(kHandle);
-        ctx->drawString(text, CRect(x - 60, getViewSize().top, x + 60, t.top - 8), kCenterText);
+        // the end handles read inwards so their text stays on the strip
+        CRect r(x - 60, getViewSize().top, x + 60, t.top - 8);
+        if (x - 60 < getViewSize().left)
+            r = CRect(getViewSize().left, r.top, getViewSize().left + 120, r.bottom);
+        if (x + 60 > getViewSize().right)
+            r = CRect(getViewSize().right - 120, r.top, getViewSize().right, r.bottom);
+        ctx->drawString(text, r, kCenterText);
     }
     setDirty(false);
 }
@@ -207,32 +199,16 @@ CMouseEventResult XoverStrip::onMouseDown(CPoint& where, const CButtonState& but
 {
     if (!buttons.isLeftButton())
         return kMouseEventNotHandled;
-    // the nearest handle takes the drag: the filters from the row under the strip, the
-    // crossovers from the strip and above
+    // the nearest handle takes the drag
     double best = 1e9;
     dragging = -1;
-    if (where.y > track().bottom - 4)
+    for (int h = 0; h < kHandles; ++h)
     {
-        for (int which = 0; which < 2; ++which)
+        const double d = std::abs(where.x - xAt(Reducer::noteHz(noteOf(h))));
+        if (d < best)
         {
-            const double d = std::abs(where.x - xAt(filterHz(which)));
-            if (d < best)
-            {
-                best = d;
-                dragging = 4 + which;
-            }
-        }
-    }
-    else
-    {
-        for (int i = 0; i < Reducer::kXovers; ++i)
-        {
-            const double d = std::abs(where.x - xAt(hzOf(i)));
-            if (d < best)
-            {
-                best = d;
-                dragging = i;
-            }
+            best = d;
+            dragging = h;
         }
     }
     if (best > 30)
@@ -249,27 +225,13 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
     if (dragging < 0 || !buttons.isLeftButton())
         return kMouseEventNotHandled;
     // a handle moves in semitones and stops at its neighbours, kXoverGapNotes away
-    auto noteOfHz = [](double hz) { return static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hz / 440.0))); };
-    int note = noteOfHz(hzAt(where.x));
     const int lowest = Reducer::kXoverLowNote, highest = Reducer::kXoverLowNote + Reducer::kXoverNotes;
-    if (dragging >= 4)
-    {
-        // the filters stay a major third apart and stop at the strip's ends, where they are off
-        note = dragging == 4 ? std::clamp(note, lowest, noteOfHz(filterHz(1)) - Reducer::kXoverGapNotes)
-                             : std::clamp(note, noteOfHz(filterHz(0)) + Reducer::kXoverGapNotes, highest);
-        const auto id = paramOf(dragging);
-        const auto n = Reducer::xoverNorm(0, Reducer::noteHz(note));
-        controller->setParamNormalized(id, n);
-        controller->performEdit(id, n);
-        invalid();
-        return kMouseEventHandled;
-    }
-    const int below = dragging > 0 ? noteOfHz(hzOf(dragging - 1)) + Reducer::kXoverGapNotes : Reducer::kXoverLowNote;
-    const int above = dragging < Reducer::kXovers - 1 ? noteOfHz(hzOf(dragging + 1)) - Reducer::kXoverGapNotes
-                                                      : Reducer::kXoverLowNote + Reducer::kXoverNotes;
+    int note = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hzAt(where.x) / 440.0)));
+    const int below = dragging > 0 ? noteOf(dragging - 1) + Reducer::kXoverGapNotes : lowest;
+    const int above = dragging < kHandles - 1 ? noteOf(dragging + 1) - Reducer::kXoverGapNotes : highest;
     note = std::clamp(note, below, above);
-    const auto id = static_cast<Steinberg::Vst::ParamID>(kXoverParam + dragging);
-    const auto n = Reducer::xoverNorm(dragging, Reducer::noteHz(note));
+    const auto id = paramOf(dragging);
+    const auto n = Reducer::xoverNorm(0, Reducer::noteHz(note));
     controller->setParamNormalized(id, n);
     controller->performEdit(id, n);
     invalid();

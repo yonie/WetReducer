@@ -1,10 +1,10 @@
 ﻿//------------------------------------------------------------------------
 // Copyright(c) 2026 Yonie.
 //------------------------------------------------------------------------
-// The three crossovers on one frequency strip, 30 Hz to 16 kHz on a log scale (Ronald: "why do
-// we not put all the sliders on the same grid ... that way they naturally cant go past one
-// another"). Three handles; a handle stops where its neighbour is, so the bands stay in order.
-// The four bands are shaded and named between the handles.
+// The band handles on one frequency strip, 30 Hz to 16 kHz on a log scale (Ronald: "why do we not
+// put all the sliders on the same grid ... that way they naturally cant go past one another").
+// Six handles, all alike: BASS's low edge, the four crossovers, AIR's high edge. A handle stops
+// where its neighbour is, so the bands stay in order. The bands are shaded and named between them.
 //------------------------------------------------------------------------
 
 #pragma once
@@ -13,6 +13,7 @@
 #include "vstgui/lib/cvstguitimer.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "wetreducercids.h"
+#include "reducerengine.h"
 
 namespace Yonie {
 
@@ -28,15 +29,11 @@ public:
     VSTGUI::CMouseEventResult onMouseUp(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
 
 private:
+    static constexpr int kHandles = Reducer::kBands + 1;    // BASS's low edge, four crossovers, AIR's high edge
+    static Steinberg::Vst::ParamID paramOf(int handle);
+    int noteOf(int handle) const;
     double hzAt(double x) const;
     double xAt(double hz) const;
-    double hzOf(int i) const;
-    double filterHz(int which) const;       // 0 highpass, 1 lowpass
-    // handles 0..3 are the crossovers, 4 the highpass, 5 the lowpass
-    static Steinberg::Vst::ParamID paramOf(int handle)
-    {
-        return static_cast<Steinberg::Vst::ParamID>(handle < 4 ? kXoverParam + handle : (handle == 4 ? kHpfParam : kLpfParam));
-    }
     VSTGUI::CRect track() const;
 
     Steinberg::Vst::EditController* controller;

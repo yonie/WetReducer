@@ -322,10 +322,14 @@ void ReducerEngine::prepare(double sampleRate)
 
 void ReducerEngine::reset()
 {
+    lowTrack.reset();
+    highTrack.reset();
     for (int ch = 0; ch < 2; ++ch)
     {
-        hp[ch].reset();
-        lp[ch].reset();
+        lowDryLo[ch].reset();
+        lowDryHi[ch].reset();
+        highDryLo[ch].reset();
+        highDryHi[ch].reset();
     }
     trackSplit.reset();
     for (auto& s : drySplit)
@@ -351,11 +355,33 @@ void ReducerEngine::applyXovers(bool resetTrackers)
     trackSplit.set(fc, fs);
     for (auto& s : drySplit)
         s.set(fc, fs);
+    // BASS starts at its low edge and AIR ends at its high edge, each kept a major third clear of
+    // the crossover next to it.
+    const double gap = std::pow(2.0, Reducer::kXoverGapNotes / 12.0);
+    lowOn = Reducer::lowEdgeOn(current.lowEdge);
+    highOn = Reducer::highEdgeOn(current.highEdge) && current.highEdge < top;
+    const double low = lowOn ? std::min(current.lowEdge, fc[0] / gap) : 20.0;
+    const double high = highOn ? std::clamp(current.highEdge, fc[Reducer::kXovers - 1] * gap, top) : top;
+    auto setPair = [this](LR4& lo, LR4& hi, double f) {
+        lo.a.setLowpass(f, fs);
+        lo.b.setLowpass(f, fs);
+        hi.a.setHighpass(f, fs);
+        hi.b.setHighpass(f, fs);
+    };
+    LR4 unused;
+    setPair(unused, lowTrack, low);
+    setPair(highTrack, unused, high);
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        setPair(lowDryLo[ch], lowDryHi[ch], low);
+        setPair(highDryLo[ch], highDryHi[ch], high);
+    }
+
     double edges[Reducer::kBands + 1];
-    edges[0] = 20.0;
+    edges[0] = low;
     for (int i = 0; i < Reducer::kXovers; ++i)
         edges[i + 1] = fc[i];
-    edges[Reducer::kBands] = top;
+    edges[Reducer::kBands] = high;
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         if (resetTrackers)
@@ -364,32 +390,13 @@ void ReducerEngine::applyXovers(bool resetTrackers)
             tones[b].setEdges(edges[b], edges[b + 1]);
         tones[b].setResponse(current.response);
     }
-    applyFilters();
-}
-
-void ReducerEngine::applyFilters()
-{
-    // 24 dB/oct (Linkwitz-Riley), -6 dB at the handle; coefficients only, so a drag does not click
-    hpOn = Reducer::hpfOn(current.hpf);
-    lpOn = Reducer::lpfOn(current.lpf);
-    const double top = fs * 0.45;
-    for (int ch = 0; ch < 2; ++ch)
-    {
-        hp[ch].a.setHighpass(std::min(current.hpf, top), fs);
-        hp[ch].b.setHighpass(std::min(current.hpf, top), fs);
-        lp[ch].a.setLowpass(std::min(current.lpf, top), fs);
-        lp[ch].b.setLowpass(std::min(current.lpf, top), fs);
-    }
 }
 
 void ReducerEngine::setSettings(const Settings& s)
 {
-    const bool filtersChanged = s.hpf != current.hpf || s.lpf != current.lpf;
-    const bool xoverChanged = s.xover != current.xover;
+    const bool xoverChanged = s.xover != current.xover || s.lowEdge != current.lowEdge || s.highEdge != current.highEdge;
     const bool responseChanged = s.response != current.response;
     current = s;
-    if (filtersChanged)
-        applyFilters();
     if (xoverChanged)
         applyXovers(false);
     else if (responseChanged)
@@ -414,6 +421,10 @@ void ReducerEngine::process(const float* inL, const float* inR, float* outL, flo
         // Trackers run on the undelayed mono band signal.
         double mono[Reducer::kBands];
         trackSplit.split(0.5 * (l + r), mono);
+        if (lowOn)
+            mono[0] = lowTrack.tick(mono[0]);
+        if (highOn)
+            mono[Reducer::kBands - 1] = highTrack.tick(mono[Reducer::kBands - 1]);
         double tone[Reducer::kBands];
         for (int b = 0; b < Reducer::kBands; ++b)
             tone[b] = tones[b].tick(mono[b], shape[b]);
@@ -427,7 +438,26 @@ void ReducerEngine::process(const float* inL, const float* inR, float* outL, flo
         double bl[Reducer::kBands], br[Reducer::kBands];
         drySplit[0].split(dl, bl);
         drySplit[1].split(dr, br);
-        double yl = 0.0, yr = 0.0;
+        // outside the band edges the music passes as it is
+        double passL = 0.0, passR = 0.0;
+        const int top = Reducer::kBands - 1;
+        if (lowOn)
+        {
+            const double xl = bl[0], xr = br[0];
+            passL += lowDryLo[0].tick(xl);
+            passR += lowDryLo[1].tick(xr);
+            bl[0] = lowDryHi[0].tick(xl);
+            br[0] = lowDryHi[1].tick(xr);
+        }
+        if (highOn)
+        {
+            const double xl = bl[top], xr = br[top];
+            passL += highDryHi[0].tick(xl);
+            passR += highDryHi[1].tick(xr);
+            bl[top] = highDryLo[0].tick(xl);
+            br[top] = highDryLo[1].tick(xr);
+        }
+        double yl = anySolo ? 0.0 : passL, yr = anySolo ? 0.0 : passR;
         for (int b = 0; b < Reducer::kBands; ++b)
         {
             if (anySolo && !current.solo[b])
@@ -435,16 +465,6 @@ void ReducerEngine::process(const float* inL, const float* inR, float* outL, flo
             const double v = current.amount[b];
             yl += (1.0 - v) * bl[b] + v * tone[b];
             yr += (1.0 - v) * br[b] + v * tone[b];
-        }
-        if (hpOn)
-        {
-            yl = hp[0].tick(yl);
-            yr = hp[1].tick(yr);
-        }
-        if (lpOn)
-        {
-            yl = lp[0].tick(yl);
-            yr = lp[1].tick(yr);
         }
         outL[i] = static_cast<float>(yl);
         outR[i] = static_cast<float>(yr);
