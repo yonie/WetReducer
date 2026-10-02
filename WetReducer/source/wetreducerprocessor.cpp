@@ -66,28 +66,34 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
     else if (id < kResponseParam)
         pending.solo[id - kSoloParam] = value > 0.5;
     else if (id == kResponseParam)
-        pending.response = std::clamp(static_cast<int>(value * 2.0 + 0.5), 0, 2);
+        pending.response = Reducer::responseIndex(value);
 }
 
-// The lamps: lit when the band has music for its tracker to follow (from -60 dBFS, fully at
-// -30), and brighter the further its knob is turned. A band silenced by another band's solo
-// glows faintly. They fall off over about a quarter second, like the meters in the rest of the line.
+// The lamps flash each time a band's tone moves to a new note, brighter the further its knob is
+// turned, and fade in about a tenth of a second. While the band has music but holds its note,
+// the lamp keeps a faint glow. A band silenced by another band's solo flashes faintly.
 void WetReducerProcessor::sendLeds(Vst::ProcessData& data)
 {
     const auto& st = engine.settings();
     bool anySolo = false;
     for (bool on : st.solo)
         anySolo = anySolo || on;
-    const double fall = std::exp(-data.numSamples / (0.25 * std::max(1.0, processSetup.sampleRate)));
+    const double fall = std::exp(-data.numSamples / (0.1 * std::max(1.0, processSetup.sampleRate)));
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         const double db = 20.0 * std::log10(engine.bandLevel(b) + 1e-9);
         const double caught = std::clamp((db + 60.0) / 30.0, 0.0, 1.0);
-        double lit = caught > 0.0 ? 0.2 + 0.8 * caught : 0.0;
-        lit *= 0.35 + 0.65 * st.amount[b];
+        double weight = 0.35 + 0.65 * st.amount[b];
         if (anySolo && !st.solo[b])
-            lit *= 0.25;
-        led[b] = std::max(lit, led[b] * fall);
+            weight *= 0.25;
+        const int changes = engine.bandNoteChanges(b);
+        const bool newNote = changes != seenChanges[b];
+        seenChanges[b] = changes;
+        double lit = led[b] * fall;
+        if (newNote && caught > 0.0)
+            lit = weight;
+        lit = std::max(lit, 0.12 * caught * weight);
+        led[b] = lit;
         if (data.outputParameterChanges && std::abs(led[b] - sentLed[b]) > 0.004)
         {
             int32 index = 0;
@@ -127,7 +133,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     return kResultOk;
 }
 
-// Prototype state. Version 4 is the five-band layout; anything older was a four-band prototype
+// Prototype state. Version 4 is the five-band layout, version 5 adds VERY SLOW as response 0; anything older was a four-band prototype
 // and loads with the defaults.
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
@@ -160,7 +166,11 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         }
         int32 r = Reducer::kResponseDefault;
         if (s.readInt32(r))
-            st.response = std::clamp(static_cast<int>(r), 0, 2);
+        {
+            if (version == 4)
+                ++r;               // version 4 had no VERY SLOW in front of SLOW
+            st.response = std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1);
+        }
     }
     pending = st;
     engine.setSettings(st);
@@ -172,7 +182,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(4);
+    s.writeInt32(5);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)

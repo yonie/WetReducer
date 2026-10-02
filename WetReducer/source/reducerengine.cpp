@@ -153,7 +153,7 @@ void BandTone::setEdges(double lowEdge, double highEdge)
 
 void BandTone::setResponse(int index)
 {
-    response = Reducer::kResponse[std::clamp(index, 0, 2)];
+    response = Reducer::kResponse[std::clamp(index, 0, Reducer::kResponses - 1)];
     hold = std::max(1, static_cast<int>(response.holdMs / 1000.0 * fs / hop)) | 1;
 }
 
@@ -162,6 +162,7 @@ void BandTone::reset()
     std::fill(ring.begin(), ring.end(), 0.0);
     writePos = sinceHop = 0;
     history.clear();
+    heldNote = -1;
     freq = freqTarget = 0.0;
     level = levelTarget = levelStep = 0.0;
     phase = 0.0;
@@ -213,6 +214,11 @@ void BandTone::analyse()
     std::vector<int> sorted(history);
     std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
     const int held = sorted[sorted.size() / 2];
+    if (held != heldNote)
+    {
+        heldNote = held;
+        ++changes;
+    }
     freqTarget = 440.0 * std::pow(2.0, (held - 69) / 12.0);
     if (freq <= 0.0)
         freq = freqTarget;

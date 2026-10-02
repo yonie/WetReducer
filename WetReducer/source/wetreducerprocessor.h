@@ -40,6 +40,7 @@ private:
     ReducerEngine::Settings pending;
     double led[Reducer::kBands] = {};
     double sentLed[Reducer::kBands] = {};
+    int seenChanges[Reducer::kBands] = {};
 };
 
 } // namespace Yonie

@@ -39,10 +39,18 @@ struct Response
 {
     double holdMs, glide, levelHops;
 };
-constexpr Response kResponse[3] = {{150.0, 0.003, 4.0},    // SLOW
-                                   {50.0, 0.02, 1.0},      // MEDIUM - what the first prototypes did
-                                   {15.0, 0.08, 1.0}};     // FAST
-constexpr int kResponseDefault = 1;
+constexpr int kResponses = 4;
+constexpr Response kResponse[kResponses] = {{500.0, 0.0008, 8.0},   // VERY SLOW
+                                            {150.0, 0.003, 4.0},    // SLOW
+                                            {50.0, 0.02, 1.0},      // MEDIUM - what the first prototypes did
+                                            {15.0, 0.08, 1.0}};     // FAST
+constexpr int kResponseDefault = 2;
+// The response as a 0..1 parameter value, and back.
+inline double responseNorm(int index) { return index / static_cast<double>(kResponses - 1); }
+inline int responseIndex(double norm)
+{
+    return std::clamp(static_cast<int>(norm * (kResponses - 1) + 0.5), 0, kResponses - 1);
+}
 
 // Crossovers: every split can go anywhere from 30 Hz to 16 kHz (fixed ranges put a whole vocal
 // range in one band, 2026-10-02); the engine keeps them in order, at least kXoverGap apart.
@@ -122,6 +130,7 @@ public:
     // (kLatency samples ago), at the given shape (0 sine, 1 square).
     double tick(double bandSample, double shape);
     double currentLevel() const { return level; }     // RMS of the band being played
+    int noteChanges() const { return changes; }       // counts each move to a new held note
 
 private:
     void analyse();
@@ -134,6 +143,7 @@ private:
     std::vector<double> hann;
     std::vector<std::complex<double>> fftBuf;
     std::vector<int> history;       // snapped notes, newest last, for the hold
+    int heldNote = -1, changes = 0;
     double freq = 0.0, freqTarget = 0.0;
     double level = 0.0, levelTarget = 0.0, levelStep = 0.0;
     double phase = 0.0;
@@ -157,6 +167,7 @@ public:
     void setSettings(const Settings& s);
     const Settings& settings() const { return current; }
     double bandLevel(int b) const { return tones[b].currentLevel(); }
+    int bandNoteChanges(int b) const { return tones[b].noteChanges(); }
     void process(const float* inL, const float* inR, float* outL, float* outR, int n);
 
 private:
