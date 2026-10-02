@@ -36,8 +36,11 @@ constexpr int kMaxWindow = 2 * kLatency;
 // Crossover choices, three per split, in Hz.
 // Crossovers, continuous on a log scale; the ranges cannot cross. Moved down on 2026-10-02 (at
 // 70 Hz / 3 kHz / 8 kHz the second band held ~90% of a song), then made knobs the same day.
-constexpr double kXoverMin[3] = {50.0, 300.0, 1500.0};
-constexpr double kXoverMax[3] = {300.0, 1500.0, 8000.0};
+// Every split can go anywhere (Ronald, 2026-10-02: fixed ranges put the whole vocal range in one
+// band); the engine keeps them in order, at least kXoverGap apart.
+constexpr double kXoverMin[3] = {30.0, 30.0, 30.0};
+constexpr double kXoverMax[3] = {16000.0, 16000.0, 16000.0};
+constexpr double kXoverGap = 1.25;          // a band is at least a major third wide
 constexpr double kXoverDefaultHz[3] = {146.8324, 587.3295, 2637.0205};     // D3, D5, E7
 
 inline double xoverHz(int i, double norm)

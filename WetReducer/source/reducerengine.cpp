@@ -274,9 +274,13 @@ void ReducerEngine::reset()
 
 void ReducerEngine::applyXovers(bool resetTrackers)
 {
+    // Keep the splits in order: a later one never sits below an earlier one.
     double fc[3];
     for (int i = 0; i < 3; ++i)
         fc[i] = std::clamp(current.xover[i], Reducer::kXoverMin[i], Reducer::kXoverMax[i]);
+    fc[1] = std::max(fc[1], fc[0] * Reducer::kXoverGap);
+    fc[2] = std::max(fc[2], fc[1] * Reducer::kXoverGap);
+    fc[2] = std::min(fc[2], std::min(20000.0, fs * 0.45) / Reducer::kXoverGap);
     // Only the coefficients change while a knob turns: the filter memories and the trackers'
     // history stay, so the sound does not drop out.
     trackSplit.set(fc, fs);
