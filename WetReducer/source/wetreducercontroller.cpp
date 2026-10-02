@@ -64,7 +64,7 @@ public:
     FilterParameter(const Vst::TChar* title, Vst::ParamID id, bool high) : XoverParameter(title, id, 0), high(high)
     {
         info.defaultNormalizedValue =
-            high ? 1.0 : Reducer::xoverNorm(0, Reducer::noteHz(Reducer::kLowEdgeDefaultNote));
+            Reducer::xoverNorm(0, Reducer::noteHz(high ? Reducer::kHighEdgeDefaultNote : Reducer::kLowEdgeDefaultNote));
         setNormalized(info.defaultNormalizedValue);
     }
     void toString(Vst::ParamValue normalized, Vst::String128 string) const SMTG_OVERRIDE

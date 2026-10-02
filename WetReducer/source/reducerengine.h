@@ -85,6 +85,8 @@ inline double edgeBottomHz() { return noteHz(kXoverLowNote); }
 // BASS starts one note under a 4-string's low E (Ronald, 2026-10-02): the tracker searches from
 // the edge up, so a slightly flat E1 would fall outside an edge set exactly on it.
 constexpr int kLowEdgeDefaultNote = 27;       // D#1, 38.9 Hz
+// AIR stops at E9 by default: above it is noise and cymbal wash, which passes as it is.
+constexpr int kHighEdgeDefaultNote = 124;     // E9, 10.5 kHz
 inline double edgeTopHz() { return noteHz(kXoverLowNote + kXoverNotes); }
 inline bool lowEdgeOn(double hz) { return hz > edgeBottomHz() * 1.01; }
 inline bool highEdgeOn(double hz) { return hz < edgeTopHz() * 0.99; }
@@ -191,7 +193,7 @@ public:
         int response = Reducer::kResponseDefault;
         int voices = Reducer::kVoicesDefault;
         double lowEdge = Reducer::noteHz(Reducer::kLowEdgeDefaultNote);
-        double highEdge = Reducer::edgeTopHz();
+        double highEdge = Reducer::noteHz(Reducer::kHighEdgeDefaultNote);
     };
 
     void prepare(double sampleRate);
