@@ -33,7 +33,11 @@ constexpr int kLatency = 8192;           // half of the largest window, fixed fo
 constexpr int kMaxWindow = 2 * kLatency;
 
 // Crossover choices, three per split, in Hz.
-constexpr double kXover[3][3] = {{50.0, 70.0, 90.0}, {1000.0, 3000.0, 5000.0}, {5000.0, 8000.0, 10000.0}};
+// Moved 2026-10-02: at 70 Hz / 3 kHz / 8 kHz the second band held ~90% of a song's energy, so
+// reducing it replaced nearly the whole mix. These give bass, body, vocals and leads, air.
+// On notes (Ronald: "the crossover bands should be musical frequencies"), equal-tempered from
+// A4 = 440 Hz: A2 D3 B3 | G4 D5 C6 | C7 E7 B7.
+constexpr double kXover[3][3] = {{110.0000, 146.8324, 246.9417}, {391.9954, 587.3295, 1046.5023}, {2093.0045, 2637.0205, 3951.0664}};
 constexpr int kXoverDefault = 1;
 } // namespace Reducer
 

@@ -30,9 +30,9 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     }
 
     const Vst::TChar* names[] = {STR16("LF / LMF"), STR16("LMF / HMF"), STR16("HMF / HF")};
-    const Vst::TChar* choices[3][3] = {{STR16("50 Hz"), STR16("70 Hz"), STR16("90 Hz")},
-                                       {STR16("1 kHz"), STR16("3 kHz"), STR16("5 kHz")},
-                                       {STR16("5 kHz"), STR16("8 kHz"), STR16("10 kHz")}};
+    const Vst::TChar* choices[3][3] = {{STR16("A2  110 Hz"), STR16("D3  147 Hz"), STR16("B3  247 Hz")},
+                                       {STR16("G4  392 Hz"), STR16("D5  587 Hz"), STR16("C6  1.05 kHz")},
+                                       {STR16("C7  2.09 kHz"), STR16("E7  2.64 kHz"), STR16("B7  3.95 kHz")}};
     for (int x = 0; x < 3; ++x)
     {
         auto* p = new Vst::StringListParameter(names[x], kXover1Param + x, nullptr, Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
