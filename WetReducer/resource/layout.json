@@ -1,0 +1,478 @@
+{
+ "editor": [
+  1520,
+  280
+ ],
+ "controls": {
+  "knob_bass": {
+   "file": "knob_bass.png",
+   "rect": [
+    442,
+    53,
+    96,
+    108
+   ],
+   "frames": 41,
+   "centre": [
+    487.0,
+    105.0
+   ],
+   "radius": 32.0,
+   "sweep": 280.0,
+   "coarse": 4
+  },
+  "knob_body": {
+   "file": "knob_body.png",
+   "rect": [
+    656,
+    53,
+    97,
+    108
+   ],
+   "frames": 41,
+   "centre": [
+    701.0,
+    105.0
+   ],
+   "radius": 32.0,
+   "sweep": 280.0,
+   "coarse": 4
+  },
+  "knob_voice": {
+   "file": "knob_voice.png",
+   "rect": [
+    870,
+    53,
+    97,
+    108
+   ],
+   "frames": 41,
+   "centre": [
+    915.0,
+    105.0
+   ],
+   "radius": 32.0,
+   "sweep": 280.0,
+   "coarse": 4
+  },
+  "knob_presence": {
+   "file": "knob_presence.png",
+   "rect": [
+    1084,
+    52,
+    97,
+    109
+   ],
+   "frames": 41,
+   "centre": [
+    1129.0,
+    105.0
+   ],
+   "radius": 32.0,
+   "sweep": 280.0,
+   "coarse": 4
+  },
+  "knob_air": {
+   "file": "knob_air.png",
+   "rect": [
+    1298,
+    53,
+    98,
+    108
+   ],
+   "frames": 41,
+   "centre": [
+    1343.0,
+    105.0
+   ],
+   "radius": 32.0,
+   "sweep": 280.0,
+   "coarse": 4
+  },
+  "solo_bass": {
+   "file": "solo_bass.png",
+   "rect": [
+    384,
+    147,
+    58,
+    41
+   ],
+   "frames": 2,
+   "centre": [
+    418.0,
+    167.0
+   ],
+   "hit": [
+    406.0,
+    159.5,
+    430.0,
+    174.5
+   ]
+  },
+  "solo_body": {
+   "file": "solo_body.png",
+   "rect": [
+    596,
+    147,
+    60,
+    41
+   ],
+   "frames": 2,
+   "centre": [
+    632.0,
+    167.0
+   ],
+   "hit": [
+    620.0,
+    159.5,
+    644.0,
+    174.5
+   ]
+  },
+  "solo_voice": {
+   "file": "solo_voice.png",
+   "rect": [
+    810,
+    145,
+    60,
+    43
+   ],
+   "frames": 2,
+   "centre": [
+    846.0,
+    167.0
+   ],
+   "hit": [
+    834.0,
+    159.5,
+    858.0,
+    174.5
+   ]
+  },
+  "solo_presence": {
+   "file": "solo_presence.png",
+   "rect": [
+    1023,
+    147,
+    61,
+    41
+   ],
+   "frames": 2,
+   "centre": [
+    1060.0,
+    167.0
+   ],
+   "hit": [
+    1048.0,
+    159.5,
+    1072.0,
+    174.5
+   ]
+  },
+  "solo_air": {
+   "file": "solo_air.png",
+   "rect": [
+    1236,
+    147,
+    62,
+    43
+   ],
+   "frames": 2,
+   "centre": [
+    1274.0,
+    167.0
+   ],
+   "hit": [
+    1262.0,
+    159.5,
+    1286.0,
+    174.5
+   ]
+  },
+  "led_bass": {
+   "file": "led_bass.png",
+   "rect": [
+    554,
+    19,
+    39,
+    37
+   ],
+   "frames": 2,
+   "centre": [
+    574.0,
+    36.0
+   ]
+  },
+  "led_body": {
+   "file": "led_body.png",
+   "rect": [
+    768,
+    17,
+    40,
+    40
+   ],
+   "frames": 2,
+   "centre": [
+    788.0,
+    36.0
+   ]
+  },
+  "led_voice": {
+   "file": "led_voice.png",
+   "rect": [
+    981,
+    17,
+    41,
+    40
+   ],
+   "frames": 2,
+   "centre": [
+    1002.0,
+    36.0
+   ]
+  },
+  "led_presence": {
+   "file": "led_presence.png",
+   "rect": [
+    1195,
+    16,
+    40,
+    37
+   ],
+   "frames": 2,
+   "centre": [
+    1216.0,
+    36.0
+   ]
+  },
+  "led_air": {
+   "file": "led_air.png",
+   "rect": [
+    1411,
+    13,
+    39,
+    45
+   ],
+   "frames": 2,
+   "centre": [
+    1430.0,
+    36.0
+   ]
+  },
+  "lcd": {
+   "file": "lcd.png",
+   "rect": [
+    109,
+    147,
+    43,
+    61
+   ],
+   "frames": 8,
+   "centre": [
+    132.0,
+    178.0
+   ]
+  },
+  "arrow_up": {
+   "file": "arrow_up.png",
+   "rect": [
+    152,
+    146,
+    40,
+    32
+   ],
+   "frames": 2,
+   "centre": [
+    166.0,
+    168.03
+   ],
+   "hit": [
+    154.0,
+    160.3,
+    178.0,
+    175.8
+   ]
+  },
+  "arrow_down": {
+   "file": "arrow_down.png",
+   "rect": [
+    152,
+    178,
+    40,
+    31
+   ],
+   "frames": 2,
+   "centre": [
+    166.0,
+    187.97
+   ],
+   "hit": [
+    154.0,
+    180.2,
+    178.0,
+    195.7
+   ]
+  },
+  "toggle": {
+   "file": "toggle.png",
+   "rect": [
+    221,
+    140,
+    94,
+    86
+   ],
+   "frames": 2,
+   "centre": [
+    260.0,
+    178.0
+   ],
+   "hit": [
+    243.0,
+    161.0,
+    277.0,
+    195.0
+   ]
+  }
+ },
+ "strip": {
+  "slot": [
+   386.0,
+   205.5,
+   1444.0,
+   212.5
+  ],
+  "track_x0": 395.0,
+  "track_x1": 1435.0,
+  "note_lo": 23,
+  "note_span": 108,
+  "line_y": 221.5,
+  "line_h": 3.0,
+  "line_inset": 1.5,
+  "line_round": 1.0,
+  "band_rgb": [
+   [
+    202,
+    76,
+    26
+   ],
+   [
+    130,
+    120,
+    215
+   ],
+   [
+    183,
+    118,
+    0
+   ],
+   [
+    12,
+    139,
+    94
+   ],
+   [
+    43,
+    117,
+    203
+   ]
+  ],
+  "caps": [
+   {
+    "file": "cap_0.png",
+    "anchor": [
+     24.67,
+     35.0
+    ],
+    "y": 209.0,
+    "size": [
+     50,
+     70
+    ],
+    "hit": [
+     16.0,
+     32.0
+    ]
+   },
+   {
+    "file": "cap_1.png",
+    "anchor": [
+     25.0,
+     36.0
+    ],
+    "y": 209.0,
+    "size": [
+     50,
+     72
+    ],
+    "hit": [
+     16.0,
+     32.0
+    ]
+   },
+   {
+    "file": "cap_2.png",
+    "anchor": [
+     24.33,
+     34.0
+    ],
+    "y": 209.0,
+    "size": [
+     50,
+     69
+    ],
+    "hit": [
+     16.0,
+     32.0
+    ]
+   },
+   {
+    "file": "cap_3.png",
+    "anchor": [
+     24.67,
+     35.0
+    ],
+    "y": 209.0,
+    "size": [
+     50,
+     71
+    ],
+    "hit": [
+     16.0,
+     32.0
+    ]
+   },
+   {
+    "file": "cap_4.png",
+    "anchor": [
+     25.0,
+     35.0
+    ],
+    "y": 209.0,
+    "size": [
+     50,
+     69
+    ],
+    "hit": [
+     16.0,
+     32.0
+    ]
+   },
+   {
+    "file": "cap_5.png",
+    "anchor": [
+     25.33,
+     34.0
+    ],
+    "y": 209.0,
+    "size": [
+     51,
+     70
+    ],
+    "hit": [
+     16.0,
+     32.0
+    ]
+   }
+  ]
+ }
+}
