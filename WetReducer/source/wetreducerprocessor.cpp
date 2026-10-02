@@ -71,7 +71,8 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
 
 // The lamps flash each time a band's tone moves to a new note, brighter the further its knob is
 // turned, and fade in about a tenth of a second. While the band has music but holds its note,
-// the lamp keeps a faint glow. A band silenced by another band's solo flashes faintly.
+// the lamp keeps a faint glow. A band whose knob is at 0, or that another band's solo
+// silences, stays dark.
 void WetReducerProcessor::sendLeds(Vst::ProcessData& data)
 {
     const auto& st = engine.settings();
@@ -83,9 +84,8 @@ void WetReducerProcessor::sendLeds(Vst::ProcessData& data)
     {
         const double db = 20.0 * std::log10(engine.bandLevel(b) + 1e-9);
         const double caught = std::clamp((db + 60.0) / 30.0, 0.0, 1.0);
-        double weight = 0.35 + 0.65 * st.amount[b];
-        if (anySolo && !st.solo[b])
-            weight *= 0.25;
+        // dark while the band's knob is at 0 or another band's solo silences it
+        const double weight = (anySolo && !st.solo[b]) ? 0.0 : st.amount[b];
         const int changes = engine.bandNoteChanges(b);
         const bool newNote = changes != seenChanges[b];
         seenChanges[b] = changes;
