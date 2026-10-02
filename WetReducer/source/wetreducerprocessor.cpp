@@ -62,6 +62,8 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.amount[id] = std::clamp(value, 0.0, 1.0);
     else if (id <= kXover3Param)
         pending.xover[id - kXover1Param] = Reducer::xoverHz(static_cast<int>(id - kXover1Param), value);
+    else if (id <= kSolo4Param)
+        pending.solo[id - kSolo1Param] = value > 0.5;
 }
 
 tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
@@ -114,6 +116,15 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         if (version >= 2 && s.readDouble(hz))
             st.xover[i] = std::clamp(hz, Reducer::kXoverMin[i], Reducer::kXoverMax[i]);
     }
+    if (version >= 3)
+    {
+        for (auto& on : st.solo)
+        {
+            int32 v = 0;
+            if (s.readInt32(v))
+                on = v != 0;
+        }
+    }
     pending = st;
     engine.setSettings(st);
     return kResultOk;
@@ -124,11 +135,13 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(2);
+    s.writeInt32(3);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)
         s.writeDouble(hz);
+    for (bool on : pending.solo)
+        s.writeInt32(on ? 1 : 0);
     return kResultOk;
 }
 

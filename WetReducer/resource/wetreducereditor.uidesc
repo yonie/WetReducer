@@ -28,6 +28,10 @@
 		<control-tag name="kX1" tag="4"/>
 		<control-tag name="kX2" tag="5"/>
 		<control-tag name="kX3" tag="6"/>
+		<control-tag name="kS1" tag="7"/>
+		<control-tag name="kS2" tag="8"/>
+		<control-tag name="kS3" tag="9"/>
+		<control-tag name="kS4" tag="10"/>
 	</control-tags>
 	<template name="view" class="CViewContainer" origin="0, 0" size="1100, 300" minSize="1100, 300" maxSize="1100, 300" background-color="plate" transparent="false">
 
@@ -41,24 +45,28 @@
 		<view class="CKnob" origin="200, 44" size="120, 120" control-tag="kLow" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band1" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="196, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="294, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
+		<view class="CCheckBox" origin="237, 146" size="50, 16" control-tag="kS1" title="SOLO" font="small" font-color="dim" boxframe-color="rule" boxfill-color="track" checkmark-color="band1" transparent="true"/>
 		<view class="CTextLabel" origin="200, 172" size="120, 18" title="LOW" font="label" font-color="band1" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="200, 190" size="120, 18" control-tag="kLow" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
 		<view class="CKnob" origin="420, 44" size="120, 120" control-tag="kLowMid" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band2" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="416, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="514, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
+		<view class="CCheckBox" origin="457, 146" size="50, 16" control-tag="kS2" title="SOLO" font="small" font-color="dim" boxframe-color="rule" boxfill-color="track" checkmark-color="band2" transparent="true"/>
 		<view class="CTextLabel" origin="420, 172" size="120, 18" title="LOW MID" font="label" font-color="band2" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="420, 190" size="120, 18" control-tag="kLowMid" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
 		<view class="CKnob" origin="640, 44" size="120, 120" control-tag="kHighMid" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band3" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="636, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="734, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
+		<view class="CCheckBox" origin="677, 146" size="50, 16" control-tag="kS3" title="SOLO" font="small" font-color="dim" boxframe-color="rule" boxfill-color="track" checkmark-color="band3" transparent="true"/>
 		<view class="CTextLabel" origin="640, 172" size="120, 18" title="HIGH MID" font="label" font-color="band3" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="640, 190" size="120, 18" control-tag="kHighMid" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
 		<view class="CKnob" origin="860, 44" size="120, 120" control-tag="kHigh" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band4" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="856, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="954, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
+		<view class="CCheckBox" origin="897, 146" size="50, 16" control-tag="kS4" title="SOLO" font="small" font-color="dim" boxframe-color="rule" boxfill-color="track" checkmark-color="band4" transparent="true"/>
 		<view class="CTextLabel" origin="860, 172" size="120, 18" title="HIGH" font="label" font-color="band4" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="860, 190" size="120, 18" control-tag="kHigh" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 

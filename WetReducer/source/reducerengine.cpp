@@ -310,6 +310,10 @@ void ReducerEngine::process(const float* inL, const float* inR, float* outL, flo
     for (int b = 0; b < Reducer::kBands; ++b)
         shape[b] = std::clamp((current.amount[b] - Reducer::kShapeStart) / (1.0 - Reducer::kShapeStart), 0.0, 1.0);
 
+    bool anySolo = false;
+    for (bool on : current.solo)
+        anySolo = anySolo || on;
+
     for (int i = 0; i < n; ++i)
     {
         const double l = inL[i], r = inR[i];
@@ -333,6 +337,8 @@ void ReducerEngine::process(const float* inL, const float* inR, float* outL, flo
         double yl = 0.0, yr = 0.0;
         for (int b = 0; b < Reducer::kBands; ++b)
         {
+            if (anySolo && !current.solo[b])
+                continue;
             const double v = current.amount[b];
             yl += (1.0 - v) * bl[b] + v * tone[b];
             yr += (1.0 - v) * br[b] + v * tone[b];

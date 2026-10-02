@@ -74,6 +74,10 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     const Vst::TChar* names[] = {STR16("LF / LMF"), STR16("LMF / HMF"), STR16("HMF / HF")};
     for (int x = 0; x < 3; ++x)
         parameters.addParameter(new XoverParameter(names[x], kXover1Param + x, x));
+
+    const Vst::TChar* solos[] = {STR16("Solo Low"), STR16("Solo Low Mid"), STR16("Solo High Mid"), STR16("Solo High")};
+    for (int b = 0; b < Reducer::kBands; ++b)
+        parameters.addParameter(solos[b], nullptr, 1, 0.0, Vst::ParameterInfo::kCanAutomate, kSolo1Param + b);
     return kResultOk;
 }
 
@@ -162,6 +166,12 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
         if (version >= 2)
             s.readDouble(hz);
         setParamNormalized(kXover1Param + x, Reducer::xoverNorm(x, hz));
+    }
+    for (int b = 0; b < Reducer::kBands; ++b)
+    {
+        int32 v = 0;
+        if (version >= 3 && s.readInt32(v))
+            setParamNormalized(kSolo1Param + b, v ? 1.0 : 0.0);
     }
     return kResultOk;
 }

@@ -128,6 +128,7 @@ public:
     {
         std::array<double, Reducer::kBands> amount{{0.0, 0.0, 0.0, 0.0}};
         std::array<double, 3> xover{{Reducer::kXoverDefaultHz[0], Reducer::kXoverDefaultHz[1], Reducer::kXoverDefaultHz[2]}};
+        std::array<bool, Reducer::kBands> solo{{false, false, false, false}};
     };
 
     void prepare(double sampleRate);

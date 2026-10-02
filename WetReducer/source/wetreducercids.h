@@ -27,8 +27,12 @@ enum WetReducerParams : Steinberg::Vst::ParamID
     kXover1Param   = 4,     // crossovers, each 30 Hz - 16 kHz on a log scale,
     kXover2Param   = 5,     // kept in order by the engine
     kXover3Param   = 6,
+    kSolo1Param    = 7,     // solo toggles, one per band: with any on, only the
+    kSolo2Param    = 8,     // soloed bands are heard
+    kSolo3Param    = 9,
+    kSolo4Param    = 10,
 
-    kParamCount    = 7
+    kParamCount    = 11
 };
 
 //------------------------------------------------------------------------
