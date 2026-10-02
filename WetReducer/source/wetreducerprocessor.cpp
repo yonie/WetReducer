@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------
 // Copyright(c) 2026 Yonie.
 //------------------------------------------------------------------------
 
@@ -133,7 +133,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     return kResultOk;
 }
 
-// Prototype state. Version 4 is the five-band layout, version 5 adds VERY SLOW as response 0; anything older was a four-band prototype
+// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0; anything older was a four-band prototype
 // and loads with the defaults.
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
@@ -168,7 +168,7 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         if (s.readInt32(r))
         {
             if (version == 4)
-                ++r;               // version 4 had no VERY SLOW in front of SLOW
+                ++r;               // version 4 had no 500 ms response in front
             st.response = std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1);
         }
     }

@@ -41,11 +41,11 @@ struct Response
     double holdMs, glide, levelHops;
 };
 constexpr int kResponses = 4;
-constexpr Response kResponse[kResponses] = {{500.0, 0.0008, 8.0},   // VERY SLOW
-                                            {150.0, 0.003, 4.0},    // SLOW
-                                            {50.0, 0.02, 1.0},      // MEDIUM - what the first prototypes did
-                                            {15.0, 0.08, 1.0}};     // FAST
-constexpr int kResponseDefault = 2;
+constexpr Response kResponse[kResponses] = {{500.0, 0.0008, 8.0},   // SLOW - the one to start from (Ronald, 2026-10-02)
+                                            {150.0, 0.003, 4.0},    // MEDIUM
+                                            {50.0, 0.02, 1.0},      // FAST - what the first prototypes did
+                                            {15.0, 0.08, 1.0}};     // VERY FAST
+constexpr int kResponseDefault = 0;
 // The response as a 0..1 parameter value, and back.
 inline double responseNorm(int index) { return index / static_cast<double>(kResponses - 1); }
 inline int responseIndex(double norm)
