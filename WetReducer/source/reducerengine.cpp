@@ -127,6 +127,7 @@ void BandTone::prepare(double sampleRate, double lowEdge, double highEdge)
 {
     fs = sampleRate;
     ring.assign(4 * Reducer::kMaxWindow, 0.0);
+    hann.clear();
     setEdges(lowEdge, highEdge);
     reset();
 }
@@ -136,14 +137,18 @@ void BandTone::setEdges(double lowEdge, double highEdge)
     lo = lowEdge;
     hi = highEdge;
     // Long enough to tell neighbouring notes apart at the band's bottom edge.
-    window = std::min(Reducer::kMaxWindow, nextPow2(std::max(2048, static_cast<int>(8.0 * fs / std::max(lo, 20.0)))));
+    const int newWindow = std::min(Reducer::kMaxWindow,
+                                   nextPow2(std::max(2048, static_cast<int>(8.0 * fs / std::max(lo, 20.0)))));
+    if (newWindow == window && !hann.empty())
+        return;                              // a knob turning inside one window size: nothing to rebuild
+    window = newWindow;
     hop = window >= 8192 ? 1024 : 256;      // a low band does not change note 170 times a second
     hold = std::max(1, static_cast<int>(Reducer::kHoldMs / 1000.0 * fs / hop)) | 1;
     hann.resize(window);
     for (int i = 0; i < window; ++i)
         hann[i] = 0.5 - 0.5 * std::cos(2.0 * kPi * i / (window - 1));
     fftBuf.assign(window, {});
-    history.clear();
+    sinceHop = 0;
 }
 
 void BandTone::reset()
@@ -251,7 +256,7 @@ void ReducerEngine::prepare(double sampleRate)
     fs = sampleRate;
     for (auto& d : delay)
         d.assign(Reducer::kLatency, 0.0f);
-    applyXovers();
+    applyXovers(true);
     reset();
 }
 
@@ -267,18 +272,23 @@ void ReducerEngine::reset()
     delayPos = 0;
 }
 
-void ReducerEngine::applyXovers()
+void ReducerEngine::applyXovers(bool resetTrackers)
 {
     double fc[3];
     for (int i = 0; i < 3; ++i)
-        fc[i] = Reducer::kXover[i][std::clamp(current.xover[i], 0, 2)];
+        fc[i] = std::clamp(current.xover[i], Reducer::kXoverMin[i], Reducer::kXoverMax[i]);
+    // Only the coefficients change while a knob turns: the filter memories and the trackers'
+    // history stay, so the sound does not drop out.
     trackSplit.set(fc, fs);
     for (auto& s : drySplit)
         s.set(fc, fs);
     const double edges[5] = {20.0, fc[0], fc[1], fc[2], std::min(20000.0, fs * 0.45)};
     for (int b = 0; b < Reducer::kBands; ++b)
     {
-        tones[b].prepare(fs, edges[b], edges[b + 1]);
+        if (resetTrackers)
+            tones[b].prepare(fs, edges[b], edges[b + 1]);
+        else
+            tones[b].setEdges(edges[b], edges[b + 1]);
     }
 }
 
@@ -287,7 +297,7 @@ void ReducerEngine::setSettings(const Settings& s)
     const bool xoverChanged = s.xover != current.xover;
     current = s;
     if (xoverChanged)
-        applyXovers();
+        applyXovers(false);
 }
 
 void ReducerEngine::process(const float* inL, const float* inR, float* outL, float* outR, int n)

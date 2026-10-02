@@ -61,7 +61,7 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
     if (id <= kHighParam)
         pending.amount[id] = std::clamp(value, 0.0, 1.0);
     else if (id <= kXover3Param)
-        pending.xover[id - kXover1Param] = std::clamp(static_cast<int>(value * 2.0 + 0.5), 0, 2);
+        pending.xover[id - kXover1Param] = Reducer::xoverHz(static_cast<int>(id - kXover1Param), value);
 }
 
 tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
@@ -106,11 +106,13 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         if (s.readDouble(v))
             a = std::clamp(v, 0.0, 1.0);
     }
-    for (auto& x : st.xover)
+    // Version 2 stores the crossovers in Hz. Version 1 (prototype builds of 2 Oct) stored a
+    // choice of three that no longer exists; those sessions get the defaults.
+    for (int i = 0; i < 3; ++i)
     {
-        int32 v = Reducer::kXoverDefault;
-        if (s.readInt32(v))
-            x = std::clamp(static_cast<int>(v), 0, 2);
+        double hz = Reducer::kXoverDefaultHz[i];
+        if (version >= 2 && s.readDouble(hz))
+            st.xover[i] = std::clamp(hz, Reducer::kXoverMin[i], Reducer::kXoverMax[i]);
     }
     pending = st;
     engine.setSettings(st);
@@ -122,11 +124,11 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(1);
+    s.writeInt32(2);
     for (double a : pending.amount)
         s.writeDouble(a);
-    for (int x : pending.xover)
-        s.writeInt32(x);
+    for (double hz : pending.xover)
+        s.writeDouble(hz);
     return kResultOk;
 }
 

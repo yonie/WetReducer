@@ -9,10 +9,48 @@
 
 #include "base/source/fstreamer.h"
 #include "public.sdk/source/vst/vstparameters.h"
+#include "pluginterfaces/base/ustring.h"
+
+#include <cmath>
+#include <cstdio>
 
 using namespace Steinberg;
 
 namespace Yonie {
+
+namespace {
+// A crossover on a log scale, printed in Hz with the nearest note.
+class XoverParameter : public Vst::Parameter
+{
+public:
+    XoverParameter(const Vst::TChar* title, Vst::ParamID id, int index) : index(index)
+    {
+        UString(info.title, str16BufferSize(Vst::String128)).assign(title);
+        info.id = id;
+        info.stepCount = 0;
+        info.defaultNormalizedValue = Reducer::xoverNorm(index, Reducer::kXoverDefaultHz[index]);
+        info.flags = Vst::ParameterInfo::kCanAutomate;
+        setNormalized(info.defaultNormalizedValue);
+    }
+    void toString(Vst::ParamValue normalized, Vst::String128 string) const SMTG_OVERRIDE
+    {
+        static const char* notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+        const double hz = Reducer::xoverHz(index, normalized);
+        const int midi = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hz / 440.0)));
+        char text[64];
+        if (hz < 1000.0)
+            std::snprintf(text, sizeof(text), "%.0f Hz  %s%d", hz, notes[(midi % 12 + 12) % 12], midi / 12 - 1);
+        else
+            std::snprintf(text, sizeof(text), "%.2f kHz  %s%d", hz / 1000.0, notes[(midi % 12 + 12) % 12], midi / 12 - 1);
+        UString(string, str16BufferSize(Vst::String128)).fromAscii(text);
+    }
+    Vst::ParamValue toPlain(Vst::ParamValue normalized) const SMTG_OVERRIDE { return Reducer::xoverHz(index, normalized); }
+    Vst::ParamValue toNormalized(Vst::ParamValue plain) const SMTG_OVERRIDE { return Reducer::xoverNorm(index, plain); }
+
+private:
+    int index;
+};
+} // namespace
 
 tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
 {
@@ -30,18 +68,8 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     }
 
     const Vst::TChar* names[] = {STR16("LF / LMF"), STR16("LMF / HMF"), STR16("HMF / HF")};
-    const Vst::TChar* choices[3][3] = {{STR16("A2  110 Hz"), STR16("D3  147 Hz"), STR16("B3  247 Hz")},
-                                       {STR16("G4  392 Hz"), STR16("D5  587 Hz"), STR16("C6  1.05 kHz")},
-                                       {STR16("C7  2.09 kHz"), STR16("E7  2.64 kHz"), STR16("B7  3.95 kHz")}};
     for (int x = 0; x < 3; ++x)
-    {
-        auto* p = new Vst::StringListParameter(names[x], kXover1Param + x, nullptr, Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
-        for (auto* c : choices[x])
-            p->appendString(c);
-        p->setNormalized(Reducer::kXoverDefault / 2.0);
-        p->getInfo().defaultNormalizedValue = Reducer::kXoverDefault / 2.0;
-        parameters.addParameter(p);
-    }
+        parameters.addParameter(new XoverParameter(names[x], kXover1Param + x, x));
     return kResultOk;
 }
 
@@ -72,9 +100,10 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
     }
     for (int x = 0; x < 3; ++x)
     {
-        int32 v = Reducer::kXoverDefault;
-        if (s.readInt32(v))
-            setParamNormalized(kXover1Param + x, v / 2.0);
+        double hz = Reducer::kXoverDefaultHz[x];
+        if (version >= 2)
+            s.readDouble(hz);
+        setParamNormalized(kXover1Param + x, Reducer::xoverNorm(x, hz));
     }
     return kResultOk;
 }

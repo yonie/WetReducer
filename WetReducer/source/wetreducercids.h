@@ -24,9 +24,9 @@ enum WetReducerParams : Steinberg::Vst::ParamID
     kLowMidParam   = 1,
     kHighMidParam  = 2,
     kHighParam     = 3,
-    kXover1Param   = 4,     // LF<>LMF:  A2 / D3 / B3
-    kXover2Param   = 5,     // LMF<>HMF: G4 / D5 / C6
-    kXover3Param   = 6,     // HMF<>HF:  C7 / E7 / B7
+    kXover1Param   = 4,     // LF<>LMF:   50 -  300 Hz, log
+    kXover2Param   = 5,     // LMF<>HMF: 300 - 1500 Hz, log
+    kXover3Param   = 6,     // HMF<>HF:  1.5 -  8 kHz, log
 
     kParamCount    = 7
 };

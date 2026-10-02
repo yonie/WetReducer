@@ -37,7 +37,7 @@
 		<view class="CParamDisplay" origin="200, 196" size="120, 18" control-tag="kLow" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
 		<!-- crossover 1 -->
-		<view class="CKnob" origin="342, 110" size="56, 56" control-tag="kX1" circle-drawing="false" corona-outline="true" corona-drawing="true" corona-color="accent2" handle-color="ink" handle-shadow-color="rule" corona-inset="3" handle-line-width="2" corona-line-width="3" angle-start="180" angle-range="180" transparent="true"/>
+		<view class="CKnob" origin="342, 110" size="56, 56" control-tag="kX1" circle-drawing="false" corona-outline="true" corona-drawing="true" corona-color="accent2" handle-color="ink" handle-shadow-color="rule" corona-inset="3" handle-line-width="2" corona-line-width="3" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="320, 176" size="100, 18" title="LF / LMF" font="small" font-color="ink" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="320, 196" size="100, 18" control-tag="kX1" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
@@ -47,7 +47,7 @@
 		<view class="CParamDisplay" origin="420, 196" size="120, 18" control-tag="kLowMid" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
 		<!-- crossover 2 -->
-		<view class="CKnob" origin="562, 110" size="56, 56" control-tag="kX2" circle-drawing="false" corona-outline="true" corona-drawing="true" corona-color="accent2" handle-color="ink" handle-shadow-color="rule" corona-inset="3" handle-line-width="2" corona-line-width="3" angle-start="180" angle-range="180" transparent="true"/>
+		<view class="CKnob" origin="562, 110" size="56, 56" control-tag="kX2" circle-drawing="false" corona-outline="true" corona-drawing="true" corona-color="accent2" handle-color="ink" handle-shadow-color="rule" corona-inset="3" handle-line-width="2" corona-line-width="3" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="540, 176" size="100, 18" title="LMF / HMF" font="small" font-color="ink" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="540, 196" size="100, 18" control-tag="kX2" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
@@ -57,7 +57,7 @@
 		<view class="CParamDisplay" origin="640, 196" size="120, 18" control-tag="kHighMid" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
 		<!-- crossover 3 -->
-		<view class="CKnob" origin="782, 110" size="56, 56" control-tag="kX3" circle-drawing="false" corona-outline="true" corona-drawing="true" corona-color="accent2" handle-color="ink" handle-shadow-color="rule" corona-inset="3" handle-line-width="2" corona-line-width="3" angle-start="180" angle-range="180" transparent="true"/>
+		<view class="CKnob" origin="782, 110" size="56, 56" control-tag="kX3" circle-drawing="false" corona-outline="true" corona-drawing="true" corona-color="accent2" handle-color="ink" handle-shadow-color="rule" corona-inset="3" handle-line-width="2" corona-line-width="3" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="760, 176" size="100, 18" title="HMF / HF" font="small" font-color="ink" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="760, 196" size="100, 18" control-tag="kX3" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 

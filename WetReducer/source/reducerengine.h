@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
@@ -33,12 +34,20 @@ constexpr int kLatency = 8192;           // half of the largest window, fixed fo
 constexpr int kMaxWindow = 2 * kLatency;
 
 // Crossover choices, three per split, in Hz.
-// Moved 2026-10-02: at 70 Hz / 3 kHz / 8 kHz the second band held ~90% of a song's energy, so
-// reducing it replaced nearly the whole mix. These give bass, body, vocals and leads, air.
-// On notes (Ronald: "the crossover bands should be musical frequencies"), equal-tempered from
-// A4 = 440 Hz: A2 D3 B3 | G4 D5 C6 | C7 E7 B7.
-constexpr double kXover[3][3] = {{110.0000, 146.8324, 246.9417}, {391.9954, 587.3295, 1046.5023}, {2093.0045, 2637.0205, 3951.0664}};
-constexpr int kXoverDefault = 1;
+// Crossovers, continuous on a log scale; the ranges cannot cross. Moved down on 2026-10-02 (at
+// 70 Hz / 3 kHz / 8 kHz the second band held ~90% of a song), then made knobs the same day.
+constexpr double kXoverMin[3] = {50.0, 300.0, 1500.0};
+constexpr double kXoverMax[3] = {300.0, 1500.0, 8000.0};
+constexpr double kXoverDefaultHz[3] = {146.8324, 587.3295, 2637.0205};     // D3, D5, E7
+
+inline double xoverHz(int i, double norm)
+{
+    return kXoverMin[i] * std::pow(kXoverMax[i] / kXoverMin[i], std::clamp(norm, 0.0, 1.0));
+}
+inline double xoverNorm(int i, double hz)
+{
+    return std::log(std::clamp(hz, kXoverMin[i], kXoverMax[i]) / kXoverMin[i]) / std::log(kXoverMax[i] / kXoverMin[i]);
+}
 } // namespace Reducer
 
 //------------------------------------------------------------------------
@@ -115,7 +124,7 @@ public:
     struct Settings
     {
         std::array<double, Reducer::kBands> amount{{0.0, 0.0, 0.0, 0.0}};
-        std::array<int, 3> xover{{Reducer::kXoverDefault, Reducer::kXoverDefault, Reducer::kXoverDefault}};
+        std::array<double, 3> xover{{Reducer::kXoverDefaultHz[0], Reducer::kXoverDefaultHz[1], Reducer::kXoverDefaultHz[2]}};
     };
 
     void prepare(double sampleRate);
@@ -125,7 +134,7 @@ public:
     void process(const float* inL, const float* inR, float* outL, float* outR, int n);
 
 private:
-    void applyXovers();
+    void applyXovers(bool resetTrackers);
 
     double fs = 44100.0;
     Settings current;
