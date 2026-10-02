@@ -7,6 +7,10 @@
 		<color name="dim" rgba="#8a8780ff"/>
 		<color name="accent" rgba="#e8a33dff"/>
 		<color name="accent2" rgba="#5fb3c9ff"/>
+		<color name="band1" rgba="#d95926ff"/>
+		<color name="band2" rgba="#e8a33dff"/>
+		<color name="band3" rgba="#19a36fff"/>
+		<color name="band4" rgba="#3987e5ff"/>
 		<color name="track" rgba="#2c2e33ff"/>
 		<color name="rule" rgba="#3a3c42ff"/>
 	</colors>
@@ -34,47 +38,32 @@
 		<view class="CTextLabel" origin="24, 146" size="170, 16" title="100  =  square" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 
 		<!-- four band knobs, each with its start (0) and end (100) marked at the arc's ends -->
-		<view class="CKnob" origin="200, 44" size="120, 120" control-tag="kLow" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="accent" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
+		<view class="CKnob" origin="200, 44" size="120, 120" control-tag="kLow" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band1" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="196, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="294, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="200, 172" size="120, 18" title="LOW" font="label" font-color="ink" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="200, 172" size="120, 18" title="LOW" font="label" font-color="band1" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="200, 190" size="120, 18" control-tag="kLow" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
-		<view class="CKnob" origin="420, 44" size="120, 120" control-tag="kLowMid" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="accent" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
+		<view class="CKnob" origin="420, 44" size="120, 120" control-tag="kLowMid" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band2" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="416, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="514, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="420, 172" size="120, 18" title="LOW MID" font="label" font-color="ink" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="420, 172" size="120, 18" title="LOW MID" font="label" font-color="band2" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="420, 190" size="120, 18" control-tag="kLowMid" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
-		<view class="CKnob" origin="640, 44" size="120, 120" control-tag="kHighMid" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="accent" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
+		<view class="CKnob" origin="640, 44" size="120, 120" control-tag="kHighMid" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band3" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="636, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="734, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="640, 172" size="120, 18" title="HIGH MID" font="label" font-color="ink" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="640, 172" size="120, 18" title="HIGH MID" font="label" font-color="band3" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="640, 190" size="120, 18" control-tag="kHighMid" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
-		<view class="CKnob" origin="860, 44" size="120, 120" control-tag="kHigh" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="accent" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
+		<view class="CKnob" origin="860, 44" size="120, 120" control-tag="kHigh" circle-drawing="false" corona-drawing="true" corona-outline="true" corona-color="band4" handle-color="ink" handle-shadow-color="rule" corona-inset="4" handle-line-width="3" corona-line-width="5" angle-start="135" angle-range="270" transparent="true"/>
 		<view class="CTextLabel" origin="856, 158" size="30, 14" title="0" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="954, 158" size="30, 14" title="100" font="small" font-color="dim" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="860, 172" size="120, 18" title="HIGH" font="label" font-color="ink" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="860, 172" size="120, 18" title="HIGH" font="label" font-color="band4" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="860, 190" size="120, 18" control-tag="kHigh" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 
-		<!-- three crossover sliders, each between the two bands it splits, full range 30 Hz - 16 kHz -->
-		<view class="CTextLabel" origin="270, 222" size="200, 16" title="LOW  |  LOW MID" font="small" font-color="ink" transparent="true" style-no-frame="true"/>
-		<view class="CSlider" origin="270, 240" size="200, 16" control-tag="kX1" orientation="horizontal" draw-frame="true" draw-back="true" draw-value="true" draw-frame-color="rule" draw-back-color="track" draw-value-color="accent2" transparent="true"/>
-		<view class="CTextLabel" origin="266, 258" size="50, 14" title="30 Hz" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="424, 258" size="50, 14" title="16 kHz" font="small" font-color="dim" text-alignment="right" transparent="true" style-no-frame="true"/>
-		<view class="CParamDisplay" origin="320, 274" size="100, 16" control-tag="kX1" font="value" font-color="accent2" transparent="true" style-no-frame="true"/>
-
-		<view class="CTextLabel" origin="490, 222" size="200, 16" title="LOW MID  |  HIGH MID" font="small" font-color="ink" transparent="true" style-no-frame="true"/>
-		<view class="CSlider" origin="490, 240" size="200, 16" control-tag="kX2" orientation="horizontal" draw-frame="true" draw-back="true" draw-value="true" draw-frame-color="rule" draw-back-color="track" draw-value-color="accent2" transparent="true"/>
-		<view class="CTextLabel" origin="486, 258" size="50, 14" title="30 Hz" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="644, 258" size="50, 14" title="16 kHz" font="small" font-color="dim" text-alignment="right" transparent="true" style-no-frame="true"/>
-		<view class="CParamDisplay" origin="540, 274" size="100, 16" control-tag="kX2" font="value" font-color="accent2" transparent="true" style-no-frame="true"/>
-
-		<view class="CTextLabel" origin="710, 222" size="200, 16" title="HIGH MID  |  HIGH" font="small" font-color="ink" transparent="true" style-no-frame="true"/>
-		<view class="CSlider" origin="710, 240" size="200, 16" control-tag="kX3" orientation="horizontal" draw-frame="true" draw-back="true" draw-value="true" draw-frame-color="rule" draw-back-color="track" draw-value-color="accent2" transparent="true"/>
-		<view class="CTextLabel" origin="706, 258" size="50, 14" title="30 Hz" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="864, 258" size="50, 14" title="16 kHz" font="small" font-color="dim" text-alignment="right" transparent="true" style-no-frame="true"/>
-		<view class="CParamDisplay" origin="760, 274" size="100, 16" control-tag="kX3" font="value" font-color="accent2" transparent="true" style-no-frame="true"/>
+		<!-- the three crossovers on one frequency strip: drag a handle; the bands are shaded in their
+		     knob's colour, stronger the further that knob is turned -->
+		<view class="CView" custom-view-name="XoverStrip" origin="200, 220" size="780, 72" transparent="true"/>
 	</template>
 </vstgui-ui-description>

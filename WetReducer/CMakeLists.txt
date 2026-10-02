@@ -28,6 +28,8 @@ smtg_add_vst3plugin(WetReducer
     source/wetreducercontroller.cpp
     source/wetreducerentry.cpp
     source/weteditor.h
+    source/xoverstrip.h
+    source/xoverstrip.cpp
 )
 
 if(SMTG_ENABLE_VSTGUI_SUPPORT)
