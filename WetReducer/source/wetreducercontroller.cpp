@@ -62,22 +62,31 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     if (result != kResultOk)
         return result;
 
-    const Vst::TChar* bands[] = {STR16("Low"), STR16("Low Mid"), STR16("High Mid"), STR16("High")};
+    const Vst::TChar* bands[] = {STR16("Bass"), STR16("Body"), STR16("Voice"), STR16("Presence"), STR16("Air")};
     for (int b = 0; b < Reducer::kBands; ++b)
     {
-        auto* p = new Vst::RangeParameter(bands[b], kLowParam + b, STR16("%"), 0.0, 100.0, 0.0, 0,
+        auto* p = new Vst::RangeParameter(bands[b], kBandParam + b, STR16("%"), 0.0, 100.0, 0.0, 0,
                                           Vst::ParameterInfo::kCanAutomate);
         p->setPrecision(0);
         parameters.addParameter(p);
     }
 
-    const Vst::TChar* names[] = {STR16("LF / LMF"), STR16("LMF / HMF"), STR16("HMF / HF")};
-    for (int x = 0; x < 3; ++x)
-        parameters.addParameter(new XoverParameter(names[x], kXover1Param + x, x));
+    const Vst::TChar* names[] = {STR16("Bass | Body"), STR16("Body | Voice"), STR16("Voice | Presence"), STR16("Presence | Air")};
+    for (int x = 0; x < Reducer::kXovers; ++x)
+        parameters.addParameter(new XoverParameter(names[x], kXoverParam + x, x));
 
-    const Vst::TChar* solos[] = {STR16("Solo Low"), STR16("Solo Low Mid"), STR16("Solo High Mid"), STR16("Solo High")};
+    const Vst::TChar* solos[] = {STR16("Solo Bass"), STR16("Solo Body"), STR16("Solo Voice"), STR16("Solo Presence"), STR16("Solo Air")};
     for (int b = 0; b < Reducer::kBands; ++b)
-        parameters.addParameter(solos[b], nullptr, 1, 0.0, Vst::ParameterInfo::kCanAutomate, kSolo1Param + b);
+        parameters.addParameter(solos[b], nullptr, 1, 0.0, Vst::ParameterInfo::kCanAutomate, kSoloParam + b);
+
+    auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
+                                                  Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
+    response->appendString(STR16("Slow"));
+    response->appendString(STR16("Medium"));
+    response->appendString(STR16("Fast"));
+    response->getInfo().defaultNormalizedValue = Reducer::kResponseDefault / 2.0;
+    response->setNormalized(Reducer::kResponseDefault / 2.0);
+    parameters.addParameter(response);
     return kResultOk;
 }
 
@@ -97,17 +106,18 @@ IPlugView* PLUGIN_API WetReducerController::createView(FIDString name)
 // cannot be dragged so far that a neighbour would be pushed off the end of its range.
 tresult WetReducerController::performEdit(Vst::ParamID tag, Vst::ParamValue value)
 {
-    if (pushing || tag < kXover1Param || tag > kXover3Param)
+    if (pushing || tag < kXoverParam || tag >= kXoverParam + Reducer::kXovers)
         return EditControllerEx1::performEdit(tag, value);
 
-    const int moved = static_cast<int>(tag - kXover1Param);
-    double hz[3];
-    for (int i = 0; i < 3; ++i)
-        hz[i] = Reducer::xoverHz(i, getParamNormalized(kXover1Param + i));
+    const int moved = static_cast<int>(tag - kXoverParam);
+    double hz[Reducer::kXovers];
+    for (int i = 0; i < Reducer::kXovers; ++i)
+        hz[i] = Reducer::xoverHz(i, getParamNormalized(kXoverParam + i));
     hz[moved] = Reducer::xoverHz(moved, value);
-    const double room = std::pow(Reducer::kXoverGap, 2 - moved), floorRoom = std::pow(Reducer::kXoverGap, moved);
+    const double room = std::pow(Reducer::kXoverGap, Reducer::kXovers - 1 - moved);
+    const double floorRoom = std::pow(Reducer::kXoverGap, moved);
     hz[moved] = std::clamp(hz[moved], Reducer::kXoverMin[moved] * floorRoom, Reducer::kXoverMax[moved] / room);
-    for (int i = moved + 1; i < 3; ++i)
+    for (int i = moved + 1; i < Reducer::kXovers; ++i)
         hz[i] = std::max(hz[i], hz[i - 1] * Reducer::kXoverGap);
     for (int i = moved - 1; i >= 0; --i)
         hz[i] = std::min(hz[i], hz[i + 1] / Reducer::kXoverGap);
@@ -116,11 +126,11 @@ tresult WetReducerController::performEdit(Vst::ParamID tag, Vst::ParamValue valu
     setParamNormalized(tag, own);
     tresult r = EditControllerEx1::performEdit(tag, own);
     pushing = true;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < Reducer::kXovers; ++i)
     {
         if (i == moved)
             continue;
-        const Vst::ParamID id = kXover1Param + i;
+        const Vst::ParamID id = kXoverParam + i;
         const Vst::ParamValue n = Reducer::xoverNorm(i, hz[i]);
         if (std::abs(n - getParamNormalized(id)) < 1e-9)
             continue;
@@ -154,25 +164,29 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
     int32 version = 0;
     if (!s.readInt32(version))
         return kResultFalse;
+    if (version < 4)
+        return kResultOk;          // a four-band prototype session: keep the defaults
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         double v = 0.0;
         if (s.readDouble(v))
-            setParamNormalized(kLowParam + b, v);
+            setParamNormalized(kBandParam + b, v);
     }
-    for (int x = 0; x < 3; ++x)
+    for (int x = 0; x < Reducer::kXovers; ++x)
     {
         double hz = Reducer::kXoverDefaultHz[x];
-        if (version >= 2)
-            s.readDouble(hz);
-        setParamNormalized(kXover1Param + x, Reducer::xoverNorm(x, hz));
+        s.readDouble(hz);
+        setParamNormalized(kXoverParam + x, Reducer::xoverNorm(x, hz));
     }
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         int32 v = 0;
-        if (version >= 3 && s.readInt32(v))
-            setParamNormalized(kSolo1Param + b, v ? 1.0 : 0.0);
+        if (s.readInt32(v))
+            setParamNormalized(kSoloParam + b, v ? 1.0 : 0.0);
     }
+    int32 r = Reducer::kResponseDefault;
+    if (s.readInt32(r))
+        setParamNormalized(kResponseParam, std::clamp(static_cast<int>(r), 0, 2) / 2.0);
     return kResultOk;
 }
 

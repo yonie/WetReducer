@@ -16,23 +16,17 @@ static const Steinberg::FUID kWetReducerControllerUID (0x2B17CF3E, 0x1CF94E87, 0
 #define WetReducerVST3Category "Fx|Pitch Shift"
 
 //------------------------------------------------------------------------
-// Prototype parameters: no panel yet, the host's own sliders drive these.
+// Prototype parameters. Five bands since 2026-10-02 - BASS, BODY, VOICE, PRESENCE, AIR; the
+// four-band layout is gone and its sessions load with defaults.
 //------------------------------------------------------------------------
 enum WetReducerParams : Steinberg::Vst::ParamID
 {
-    kLowParam      = 0,     // band knobs, 0..1: original -> sine blend -> square
-    kLowMidParam   = 1,
-    kHighMidParam  = 2,
-    kHighParam     = 3,
-    kXover1Param   = 4,     // crossovers, each 30 Hz - 16 kHz on a log scale,
-    kXover2Param   = 5,     // kept in order by the engine
-    kXover3Param   = 6,
-    kSolo1Param    = 7,     // solo toggles, one per band: with any on, only the
-    kSolo2Param    = 8,     // soloed bands are heard
-    kSolo3Param    = 9,
-    kSolo4Param    = 10,
+    kBandParam     = 0,     // 0..4: band amounts, 0..1 = original -> sine blend -> square
+    kXoverParam    = 5,     // 5..8: crossovers, 30 Hz - 16 kHz on a log scale, kept in order
+    kSoloParam     = 9,     // 9..13: solo per band; with any on, only the soloed bands are heard
+    kResponseParam = 14,    // SLOW / MEDIUM / FAST: how quickly the tones follow the music
 
-    kParamCount    = 11
+    kParamCount    = 15
 };
 
 //------------------------------------------------------------------------

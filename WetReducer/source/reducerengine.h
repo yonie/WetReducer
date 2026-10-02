@@ -27,21 +27,29 @@
 namespace Yonie {
 
 namespace Reducer {
-constexpr int kBands = 4;
+constexpr int kBands = 5;
+constexpr int kXovers = kBands - 1;
 constexpr double kShapeStart = 0.25;     // the square comes in over the last 75% of the travel
-constexpr double kHoldMs = 50.0;
 constexpr int kLatency = 8192;           // half of the largest window, fixed for every rate
 constexpr int kMaxWindow = 2 * kLatency;
 
-// Crossover choices, three per split, in Hz.
-// Crossovers, continuous on a log scale; the ranges cannot cross. Moved down on 2026-10-02 (at
-// 70 Hz / 3 kHz / 8 kHz the second band held ~90% of a song), then made knobs the same day.
-// Every split can go anywhere (Ronald, 2026-10-02: fixed ranges put the whole vocal range in one
-// band); the engine keeps them in order, at least kXoverGap apart.
-constexpr double kXoverMin[3] = {30.0, 30.0, 30.0};
-constexpr double kXoverMax[3] = {16000.0, 16000.0, 16000.0};
+// How quickly the tones follow the music: how long a note must last before a band's tone moves
+// to it, how fast the tone glides there, and over how many analysis hops its level is averaged.
+struct Response
+{
+    double holdMs, glide, levelHops;
+};
+constexpr Response kResponse[3] = {{150.0, 0.003, 4.0},    // SLOW
+                                   {50.0, 0.02, 1.0},      // MEDIUM - what the first prototypes did
+                                   {15.0, 0.08, 1.0}};     // FAST
+constexpr int kResponseDefault = 1;
+
+// Crossovers: every split can go anywhere from 30 Hz to 16 kHz (fixed ranges put a whole vocal
+// range in one band, 2026-10-02); the engine keeps them in order, at least kXoverGap apart.
+constexpr double kXoverMin[kXovers] = {30.0, 30.0, 30.0, 30.0};
+constexpr double kXoverMax[kXovers] = {16000.0, 16000.0, 16000.0, 16000.0};
 constexpr double kXoverGap = 1.25;          // a band is at least a major third wide
-constexpr double kXoverDefaultHz[3] = {146.8324, 587.3295, 2637.0205};     // D3, D5, E7
+constexpr double kXoverDefaultHz[kXovers] = {123.4708, 493.8833, 2093.0045, 6271.9270};    // B2 B4 C7 G8
 
 inline double xoverHz(int i, double norm)
 {
@@ -85,12 +93,12 @@ struct LR4
 class Splitter
 {
 public:
-    void set(const double fc[3], double fs);
+    void set(const double fc[Reducer::kXovers], double fs);
     void reset();
     void split(double x, double out[Reducer::kBands]);
 
 private:
-    LR4 lo[3], hi[3];
+    LR4 lo[Reducer::kXovers], hi[Reducer::kXovers];
 };
 
 //------------------------------------------------------------------------
@@ -100,6 +108,7 @@ class BandTone
 public:
     void prepare(double fs, double lowEdge, double highEdge);
     void setEdges(double lowEdge, double highEdge);
+    void setResponse(int index);
     void reset();
     // Feed one undelayed mono band sample; returns the tone for the sample now being played
     // (kLatency samples ago), at the given shape (0 sine, 1 square).
@@ -110,6 +119,7 @@ private:
 
     double fs = 44100.0, lo = 20.0, hi = 20000.0;
     int window = 2048, hop = 256, hold = 9;
+    Reducer::Response response = Reducer::kResponse[Reducer::kResponseDefault];
     std::vector<double> ring;       // undelayed band signal
     int writePos = 0, sinceHop = 0;
     std::vector<double> hann;
@@ -126,9 +136,11 @@ class ReducerEngine
 public:
     struct Settings
     {
-        std::array<double, Reducer::kBands> amount{{0.0, 0.0, 0.0, 0.0}};
-        std::array<double, 3> xover{{Reducer::kXoverDefaultHz[0], Reducer::kXoverDefaultHz[1], Reducer::kXoverDefaultHz[2]}};
-        std::array<bool, Reducer::kBands> solo{{false, false, false, false}};
+        std::array<double, Reducer::kBands> amount{};
+        std::array<double, Reducer::kXovers> xover{{Reducer::kXoverDefaultHz[0], Reducer::kXoverDefaultHz[1],
+                                                    Reducer::kXoverDefaultHz[2], Reducer::kXoverDefaultHz[3]}};
+        std::array<bool, Reducer::kBands> solo{};
+        int response = Reducer::kResponseDefault;
     };
 
     void prepare(double sampleRate);

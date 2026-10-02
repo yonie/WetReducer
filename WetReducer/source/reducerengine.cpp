@@ -91,9 +91,9 @@ void Biquad::set(double fc, double fs, bool high)
 }
 
 //------------------------------------------------------------------------
-void Splitter::set(const double fc[3], double fs)
+void Splitter::set(const double fc[Reducer::kXovers], double fs)
 {
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < Reducer::kXovers; ++i)
     {
         lo[i].a.setLowpass(fc[i], fs);
         lo[i].b.setLowpass(fc[i], fs);
@@ -104,7 +104,7 @@ void Splitter::set(const double fc[3], double fs)
 
 void Splitter::reset()
 {
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < Reducer::kXovers; ++i)
     {
         lo[i].reset();
         hi[i].reset();
@@ -114,12 +114,12 @@ void Splitter::reset()
 void Splitter::split(double x, double out[Reducer::kBands])
 {
     double rest = x;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < Reducer::kXovers; ++i)
     {
         out[i] = lo[i].tick(rest);
         rest = hi[i].tick(rest);
     }
-    out[3] = rest;
+    out[Reducer::kXovers] = rest;
 }
 
 //------------------------------------------------------------------------
@@ -143,12 +143,18 @@ void BandTone::setEdges(double lowEdge, double highEdge)
         return;                              // a knob turning inside one window size: nothing to rebuild
     window = newWindow;
     hop = window >= 8192 ? 1024 : 256;      // a low band does not change note 170 times a second
-    hold = std::max(1, static_cast<int>(Reducer::kHoldMs / 1000.0 * fs / hop)) | 1;
+    hold = std::max(1, static_cast<int>(response.holdMs / 1000.0 * fs / hop)) | 1;
     hann.resize(window);
     for (int i = 0; i < window; ++i)
         hann[i] = 0.5 - 0.5 * std::cos(2.0 * kPi * i / (window - 1));
     fftBuf.assign(window, {});
     sinceHop = 0;
+}
+
+void BandTone::setResponse(int index)
+{
+    response = Reducer::kResponse[std::clamp(index, 0, 2)];
+    hold = std::max(1, static_cast<int>(response.holdMs / 1000.0 * fs / hop)) | 1;
 }
 
 void BandTone::reset()
@@ -211,15 +217,16 @@ void BandTone::analyse()
     if (freq <= 0.0)
         freq = freqTarget;
 
-    // Level: RMS of one hop around the played sample, reached by the next analysis.
+    // Level: RMS around the played sample over levelHops hops, reached by the next analysis.
     double sum = 0.0;
     const int centre = end - window / 2;
-    for (int i = -hop / 2; i < hop / 2; ++i)
+    const int span = std::max(hop, static_cast<int>(hop * response.levelHops));
+    for (int i = -span / 2; i < span / 2; ++i)
     {
         const double v = ring[((centre + i) % size + size) % size];
         sum += v * v;
     }
-    levelTarget = std::sqrt(sum / hop);
+    levelTarget = std::sqrt(sum / span);
     levelStep = (levelTarget - level) / hop;
 }
 
@@ -235,7 +242,7 @@ double BandTone::tick(double bandSample, double shape)
     level += levelStep;
     if ((levelStep > 0 && level > levelTarget) || (levelStep < 0 && level < levelTarget))
         level = levelTarget;
-    freq += (freqTarget - freq) * 0.02;     // a few milliseconds of glide, no clicks on a note change
+    freq += (freqTarget - freq) * response.glide;     // glide, so a note change does not click
 
     const double dt = freq / fs;
     phase += dt;
@@ -274,34 +281,43 @@ void ReducerEngine::reset()
 
 void ReducerEngine::applyXovers(bool resetTrackers)
 {
-    // Keep the splits in order: a later one never sits below an earlier one.
-    double fc[3];
-    for (int i = 0; i < 3; ++i)
+    // Keep the splits in order: a later one never sits below an earlier one. Only the
+    // coefficients change while a handle moves, so the sound does not drop out.
+    double fc[Reducer::kXovers];
+    for (int i = 0; i < Reducer::kXovers; ++i)
         fc[i] = std::clamp(current.xover[i], Reducer::kXoverMin[i], Reducer::kXoverMax[i]);
-    fc[1] = std::max(fc[1], fc[0] * Reducer::kXoverGap);
-    fc[2] = std::max(fc[2], fc[1] * Reducer::kXoverGap);
-    fc[2] = std::min(fc[2], std::min(20000.0, fs * 0.45) / Reducer::kXoverGap);
-    // Only the coefficients change while a knob turns: the filter memories and the trackers'
-    // history stay, so the sound does not drop out.
+    for (int i = 1; i < Reducer::kXovers; ++i)
+        fc[i] = std::max(fc[i], fc[i - 1] * Reducer::kXoverGap);
+    const double top = std::min(20000.0, fs * 0.45);
+    fc[Reducer::kXovers - 1] = std::min(fc[Reducer::kXovers - 1], top / Reducer::kXoverGap);
     trackSplit.set(fc, fs);
     for (auto& s : drySplit)
         s.set(fc, fs);
-    const double edges[5] = {20.0, fc[0], fc[1], fc[2], std::min(20000.0, fs * 0.45)};
+    double edges[Reducer::kBands + 1];
+    edges[0] = 20.0;
+    for (int i = 0; i < Reducer::kXovers; ++i)
+        edges[i + 1] = fc[i];
+    edges[Reducer::kBands] = top;
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         if (resetTrackers)
             tones[b].prepare(fs, edges[b], edges[b + 1]);
         else
             tones[b].setEdges(edges[b], edges[b + 1]);
+        tones[b].setResponse(current.response);
     }
 }
 
 void ReducerEngine::setSettings(const Settings& s)
 {
     const bool xoverChanged = s.xover != current.xover;
+    const bool responseChanged = s.response != current.response;
     current = s;
     if (xoverChanged)
         applyXovers(false);
+    else if (responseChanged)
+        for (auto& t : tones)
+            t.setResponse(current.response);
 }
 
 void ReducerEngine::process(const float* inL, const float* inR, float* outL, float* outR, int n)

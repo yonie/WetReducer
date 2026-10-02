@@ -24,8 +24,11 @@ const CColor kInk(217, 214, 207);
 const CColor kDim(138, 135, 128);
 const CColor kHandle(95, 179, 201);
 // One colour per band, the same as its knob on the panel.
-const CColor kBand[4] = {CColor(217, 89, 38), CColor(232, 163, 61), CColor(25, 163, 111), CColor(57, 135, 229)};
-const char* kBandName[4] = {"LOW", "LOW MID", "HIGH MID", "HIGH"};
+// One colour per band, the same as its knob; checked for colour-blind and normal-vision
+// separation on the panel's dark plate (dataviz validator, 2026-10-02).
+const CColor kBand[5] = {CColor(0xd9, 0x59, 0x26), CColor(0x90, 0x85, 0xe9), CColor(0xc9, 0x85, 0x00),
+                         CColor(0x19, 0x9e, 0x70), CColor(0x39, 0x87, 0xe5)};
+const char* kBandName[5] = {"BASS", "BODY", "VOICE", "PRESENCE", "AIR"};
 const double kLo = 30.0, kHi = 16000.0;
 
 void noteName(double hz, char* out, size_t n)
@@ -44,7 +47,7 @@ XoverStrip::XoverStrip(const CRect& size, Steinberg::Vst::EditController* c) : C
     // Follow the parameters (host automation, a loaded session) without a listener per tag.
     timer = makeOwned<CVSTGUITimer>([this](CVSTGUITimer*) {
         bool changed = false;
-        for (int i = 0; i < 7; ++i)
+        for (int i = 0; i < kSoloParam; ++i)
         {
             const double v = controller->getParamNormalized(static_cast<Steinberg::Vst::ParamID>(i));
             if (std::abs(v - shown[i]) > 1e-6)
@@ -87,7 +90,7 @@ double XoverStrip::xAt(double hz) const
 
 double XoverStrip::hzOf(int i) const
 {
-    return Reducer::xoverHz(i, controller->getParamNormalized(kXover1Param + i));
+    return Reducer::xoverHz(i, controller->getParamNormalized(kXoverParam + i));
 }
 
 void XoverStrip::draw(CDrawContext* ctx)
@@ -98,15 +101,19 @@ void XoverStrip::draw(CDrawContext* ctx)
     ctx->drawRect(t, kDrawFilled);
 
     // the four bands between the handles
-    double edge[5] = {kLo, hzOf(0), hzOf(1), hzOf(2), kHi};
+    double edge[Reducer::kBands + 1];
+    edge[0] = kLo;
+    for (int i = 0; i < Reducer::kXovers; ++i)
+        edge[i + 1] = hzOf(i);
+    edge[Reducer::kBands] = kHi;
     auto font = makeOwned<CFontDesc>("Arial", 11, kBoldFace);
     ctx->setFont(font);
-    for (int b = 0; b < 4; ++b)
+    for (int b = 0; b < Reducer::kBands; ++b)
     {
         CRect band(xAt(edge[b]), t.top, xAt(edge[b + 1]), t.bottom);
         // the band's colour, stronger the further its knob is turned
         CColor c = kBand[b];
-        c.alpha = static_cast<uint8_t>(40 + 200 * controller->getParamNormalized(kLowParam + b));
+        c.alpha = static_cast<uint8_t>(40 + 200 * controller->getParamNormalized(kBandParam + b));
         ctx->setFillColor(c);
         ctx->drawRect(band, kDrawFilled);
         ctx->setFontColor(kInk);
@@ -132,7 +139,7 @@ void XoverStrip::draw(CDrawContext* ctx)
     ctx->drawString("16 kHz", CRect(t.right - 40, t.bottom + 4, t.right, t.bottom + 18), kRightText);
 
     // handles with their readouts
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < Reducer::kXovers; ++i)
     {
         const double x = xAt(edge[i + 1]);
         ctx->setFrameColor(kHandle);
@@ -156,7 +163,7 @@ CMouseEventResult XoverStrip::onMouseDown(CPoint& where, const CButtonState& but
     // the nearest handle takes the drag
     double best = 1e9;
     dragging = -1;
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < Reducer::kXovers; ++i)
     {
         const double d = std::abs(where.x - xAt(hzOf(i)));
         if (d < best)
@@ -170,7 +177,7 @@ CMouseEventResult XoverStrip::onMouseDown(CPoint& where, const CButtonState& but
         dragging = -1;
         return kMouseEventHandled;
     }
-    controller->beginEdit(kXover1Param + dragging);
+    controller->beginEdit(kXoverParam + dragging);
     return onMouseMoved(where, buttons);
 }
 
@@ -181,9 +188,9 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
     // a handle stops at its neighbours, at least kXoverGap away
     double hz = hzAt(where.x);
     const double below = dragging > 0 ? hzOf(dragging - 1) * Reducer::kXoverGap : kLo;
-    const double above = dragging < 2 ? hzOf(dragging + 1) / Reducer::kXoverGap : kHi;
+    const double above = dragging < Reducer::kXovers - 1 ? hzOf(dragging + 1) / Reducer::kXoverGap : kHi;
     hz = std::clamp(hz, below, above);
-    const auto id = static_cast<Steinberg::Vst::ParamID>(kXover1Param + dragging);
+    const auto id = static_cast<Steinberg::Vst::ParamID>(kXoverParam + dragging);
     const auto n = Reducer::xoverNorm(dragging, hz);
     controller->setParamNormalized(id, n);
     controller->performEdit(id, n);
@@ -194,7 +201,7 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
 CMouseEventResult XoverStrip::onMouseUp(CPoint& where, const CButtonState& buttons)
 {
     if (dragging >= 0)
-        controller->endEdit(kXover1Param + dragging);
+        controller->endEdit(kXoverParam + dragging);
     dragging = -1;
     invalid();
     return kMouseEventHandled;

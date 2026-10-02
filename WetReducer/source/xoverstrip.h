@@ -34,7 +34,7 @@ private:
 
     Steinberg::Vst::EditController* controller;
     VSTGUI::SharedPointer<VSTGUI::CVSTGUITimer> timer;
-    double shown[7] = {0, 0, 0, 0, 0, 0, 0};   // the seven parameters as last drawn
+    double shown[32] = {};          // the parameters as last drawn
     int dragging = -1;
 };
 
