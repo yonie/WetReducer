@@ -16,26 +16,13 @@ using namespace VSTGUI;
 namespace Yonie {
 
 namespace {
-const CColor kInk(40, 38, 34);
-const CColor kReadoutBack(244, 240, 228, 230);
-
-void noteLabel(int midi, char* out, size_t n)
-{
-    static const char* names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-    const double hz = Reducer::noteHz(midi);
-    if (hz < 1000.0)
-        std::snprintf(out, n, "%s%d  %.0f Hz", names[(midi % 12 + 12) % 12], midi / 12 - 1, hz);
-    else
-        std::snprintf(out, n, "%s%d  %.2f kHz", names[(midi % 12 + 12) % 12], midi / 12 - 1, hz / 1000.0);
-}
 } // namespace
 
 XoverStrip::XoverStrip(const CRect& size, Steinberg::Vst::EditController* c, const StripGeometry& geometry)
 : CView(size), controller(c), g(geometry)
 {
     setTransparency(true);
-    // Follow the parameters (host automation, a loaded session) without a listener per tag, and
-    // let the note readout go a moment after a cap stops moving.
+    // Follow the parameters (host automation, a loaded session) without a listener per tag.
     timer = makeOwned<CVSTGUITimer>([this](CVSTGUITimer*) {
         bool changed = false;
         for (int h = 0; h < kHandles; ++h)
@@ -47,11 +34,6 @@ XoverStrip::XoverStrip(const CRect& size, Steinberg::Vst::EditController* c, con
                 shown[id] = v;
                 changed = true;
             }
-        }
-        if (readout >= 0 && dragging < 0 && --readoutTicks <= 0)
-        {
-            readout = -1;
-            changed = true;
         }
         if (changed)
             invalid();
@@ -135,25 +117,6 @@ void XoverStrip::draw(CDrawContext* ctx)
         bm->draw(ctx, r);
     }
 
-    // While a cap moves, its note above it.
-    if (readout >= 0)
-    {
-        char text[32];
-        noteLabel(noteOf(readout), text, sizeof(text));
-        auto font = makeOwned<CFontDesc>("Arial", 11, kBoldFace);
-        ctx->setFont(font);
-        const double w = ctx->getStringWidth(text) + 12.0;
-        const double top = getViewSize().top + 1.0;
-        CRect r(x[readout] - w / 2.0, top, x[readout] + w / 2.0, top + 17.0);
-        if (r.left < getViewSize().left)
-            r.offset(getViewSize().left - r.left, 0);
-        if (r.right > getViewSize().right)
-            r.offset(getViewSize().right - r.right, 0);
-        ctx->setFillColor(kReadoutBack);
-        ctx->drawRect(r, kDrawFilled);
-        ctx->setFontColor(kInk);
-        ctx->drawString(text, r, kCenterText);
-    }
     setDirty(false);
 }
 
@@ -161,10 +124,10 @@ CMouseEventResult XoverStrip::onMouseDown(CPoint& where, const CButtonState& but
 {
     if (!buttons.isLeftButton())
         return kMouseEventNotHandled;
+    // a click that misses every cap is not ours: let it reach whatever is underneath
     dragging = handleAt(where);
     if (dragging < 0)
-        return kMouseEventHandled;
-    readout = dragging;
+        return kMouseEventNotHandled;
     controller->beginEdit(paramOf(dragging));
     return onMouseMoved(where, buttons);
 }
@@ -182,7 +145,6 @@ CMouseEventResult XoverStrip::onMouseUp(CPoint& where, const CButtonState& butto
     if (dragging >= 0)
         controller->endEdit(paramOf(dragging));
     dragging = -1;
-    readoutTicks = 30;          // about a second, then the readout goes
     invalid();
     return kMouseEventHandled;
 }
@@ -207,8 +169,6 @@ void XoverStrip::onMouseWheelEvent(MouseWheelEvent& event)
     controller->beginEdit(paramOf(nearest));
     moveTo(nearest, noteOf(nearest) + step);
     controller->endEdit(paramOf(nearest));
-    readout = nearest;
-    readoutTicks = 30;
     event.consumed = true;
 }
 

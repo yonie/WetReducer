@@ -68,6 +68,6 @@
 		<view class="CControl" custom-view-name="VoiceArrow" control-tag="kVoices" origin="152, 146" size="40, 32" bitmap="arrow_up" direction="1" transparent="true"/>
 		<view class="CControl" custom-view-name="VoiceArrow" control-tag="kVoices" origin="152, 178" size="40, 31" bitmap="arrow_down" direction="-1" transparent="true"/>
 		<view class="COnOffButton" control-tag="kResp" origin="221, 140" size="94, 86" bitmap="toggle" transparent="true"/>
-		<view class="CView" custom-view-name="XoverStrip" origin="346, 153" size="1138, 96" track-x0="395" track-x1="1435" line-y="223" line-h="3" line-inset="1.5" cap-y="209" band-colors="#ca4c1a,#8278d7,#b77600,#0c8b5e,#2b75cb" cap-0="cap_0" cap-0-anchor="24.67, 35" cap-1="cap_1" cap-1-anchor="25, 36" cap-2="cap_2" cap-2-anchor="24.33, 34" cap-3="cap_3" cap-3-anchor="24.67, 35" cap-4="cap_4" cap-4-anchor="25, 35" cap-5="cap_5" cap-5-anchor="25.33, 34" transparent="true"/>
+		<view class="CView" custom-view-name="XoverStrip" origin="346, 171" size="1138, 78" track-x0="395" track-x1="1435" line-y="223" line-h="3" line-inset="1.5" cap-y="209" band-colors="#ca4c1a,#8278d7,#b77600,#0c8b5e,#2b75cb" cap-0="cap_0" cap-0-anchor="24.67, 35" cap-1="cap_1" cap-1-anchor="25, 36" cap-2="cap_2" cap-2-anchor="24.33, 34" cap-3="cap_3" cap-3-anchor="24.67, 35" cap-4="cap_4" cap-4-anchor="25, 35" cap-5="cap_5" cap-5-anchor="25.33, 34" transparent="true"/>
 	</template>
 </vstgui-ui-description>

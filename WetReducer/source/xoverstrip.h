@@ -62,8 +62,6 @@ private:
     VSTGUI::SharedPointer<VSTGUI::CVSTGUITimer> timer;
     double shown[32] = {};          // the parameters as last drawn
     int dragging = -1;
-    int readout = -1;               // the handle whose note is shown, while it moves
-    int readoutTicks = 0;
 };
 
 } // namespace Yonie
