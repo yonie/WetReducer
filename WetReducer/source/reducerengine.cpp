@@ -207,16 +207,22 @@ void BandTone::analyse()
         else
             same->mag = std::max(same->mag, m);
     }
-    // The loudest `active` notes, ignoring any more than 12 dB under the loudest.
+    // Which notes play. LOUDEST: the `active` strongest. LOWEST: of the band's eight strongest
+    // notes, the `active` lowest - so the bottom of a chord holds still. SKIP drops any note more
+    // than 12 dB under the loudest; KEEP fills every voice.
     std::sort(peaks.begin(), peaks.end(), [](const Peak& x, const Peak& y) { return x.mag > y.mag; });
-    if (peaks.size() > static_cast<size_t>(active))
-        peaks.resize(active);
-    if (!peaks.empty())
+    const double floorMag = peaks.empty() ? 0.0 : peaks.front().mag * 0.25;
+    if (lowestFirst)
     {
-        const double floorMag = peaks.front().mag * 0.25;
+        if (peaks.size() > static_cast<size_t>(Reducer::kVoices))
+            peaks.resize(Reducer::kVoices);
+        std::sort(peaks.begin(), peaks.end(), [](const Peak& x, const Peak& y) { return x.note < y.note; });
+    }
+    if (!keepQuietNotes)
         peaks.erase(std::remove_if(peaks.begin(), peaks.end(), [floorMag](const Peak& p) { return p.mag < floorMag; }),
                     peaks.end());
-    }
+    if (peaks.size() > static_cast<size_t>(active))
+        peaks.resize(active);
     double power = 0.0;
     for (const auto& p : peaks)
         power += p.mag * p.mag;
@@ -390,6 +396,7 @@ void ReducerEngine::applyXovers(bool resetTrackers)
             tones[b].setEdges(edges[b], edges[b + 1]);
         tones[b].setResponse(current.response);
         tones[b].setVoices(current.voices);
+        tones[b].setPicking(current.lowestFirst, current.keepQuiet);
     }
 }
 
@@ -404,7 +411,10 @@ void ReducerEngine::setSettings(const Settings& s)
         for (auto& t : tones)
             t.setResponse(current.response);
     for (auto& t : tones)
+    {
         t.setVoices(current.voices);
+        t.setPicking(current.lowestFirst, current.keepQuiet);
+    }
 }
 
 void ReducerEngine::process(const float* inL, const float* inR, float* outL, float* outR, int n)

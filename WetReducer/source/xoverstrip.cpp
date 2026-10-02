@@ -172,7 +172,9 @@ void XoverStrip::draw(CDrawContext* ctx)
     for (int h = 0; h < kHandles; ++h)
     {
         const double x = xs[h];
-        const bool crowded = (h > 0 && x - xs[h - 1] < 95) || (h < kHandles - 1 && xs[h + 1] - x < 95);
+        // an end handle's readout is pushed inwards, so it needs more room
+        auto room = [&](int l, int r) { return (l == 0 || r == kHandles - 1) ? 150.0 : 95.0; };
+        const bool crowded = (h > 0 && x - xs[h - 1] < room(h - 1, h)) || (h < kHandles - 1 && xs[h + 1] - x < room(h, h + 1));
         ctx->setFrameColor(kHandle);
         ctx->setLineWidth(h == dragging ? 4 : 3);
         ctx->drawLine(CPoint(x, t.top - 4), CPoint(x, t.bottom));

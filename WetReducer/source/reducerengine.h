@@ -140,6 +140,7 @@ public:
     void setEdges(double lowEdge, double highEdge);
     void setResponse(int index);
     void setVoices(int n) { active = std::clamp(n, 1, Reducer::kVoices); }
+    void setPicking(bool lowest, bool keepQuiet) { lowestFirst = lowest; keepQuietNotes = keepQuiet; }
     void reset();
     // Feed one undelayed mono band sample; returns the tone for the sample now being played
     // (kLatency samples ago), at the given shape (0 sine, 1 square).
@@ -169,6 +170,8 @@ private:
     };
     std::array<Voice, Reducer::kVoices> voices;
     int active = Reducer::kVoicesDefault;   // how many of them may play
+    bool lowestFirst = true;                 // the lowest of the band's strongest notes win
+    bool keepQuietNotes = true;              // every voice is used, however quiet its note
     double weightGlide = 0.001;
     int changes = 0;
     double level = 0.0, levelTarget = 0.0, levelStep = 0.0;
@@ -186,6 +189,8 @@ public:
         std::array<bool, Reducer::kBands> solo{};
         int response = Reducer::kResponseDefault;
         int voices = Reducer::kVoicesDefault;
+        bool lowestFirst = true;
+        bool keepQuiet = true;
         double lowEdge = Reducer::edgeBottomHz();
         double highEdge = Reducer::edgeTopHz();
     };
