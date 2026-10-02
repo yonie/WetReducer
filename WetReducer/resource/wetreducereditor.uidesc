@@ -37,7 +37,7 @@
 		<control-tag name="kL3" tag="18"/>
 		<control-tag name="kL4" tag="19"/>
 	</control-tags>
-	<template name="view" class="CViewContainer" origin="0, 0" size="1100, 300" minSize="1100, 300" maxSize="1100, 300" background-color="plate" transparent="false">
+	<template name="view" class="CViewContainer" origin="0, 0" size="1100, 328" minSize="1100, 328" maxSize="1100, 328" background-color="plate" transparent="false">
 		<view class="CTextLabel" origin="24, 14" size="200, 28" title="WET REDUCER" font="title" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 40" size="240, 18" title="multiband tone reducer - prototype" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 96" size="150, 16" title="0  =  original" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
@@ -86,6 +86,6 @@
 		<view class="CTextLabel" origin="910, 166" size="110, 18" title="AIR" font="label" font-color="band5" text-alignment="center" transparent="true" style-no-frame="true"/>
 		<view class="CParamDisplay" origin="910, 184" size="110, 18" control-tag="kB4" font="value" font-color="dim" transparent="true" style-no-frame="true"/>
 		<!-- the four crossovers on one frequency strip; each band shaded in its knob colour, stronger as that knob turns -->
-		<view class="CView" custom-view-name="XoverStrip" origin="190, 220" size="830, 72" transparent="true"/>
+		<view class="CView" custom-view-name="XoverStrip" origin="190, 220" size="830, 100" transparent="true"/>
 	</template>
 </vstgui-ui-description>

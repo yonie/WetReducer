@@ -47,7 +47,8 @@ XoverStrip::XoverStrip(const CRect& size, Steinberg::Vst::EditController* c) : C
     // Follow the parameters (host automation, a loaded session) without a listener per tag.
     timer = makeOwned<CVSTGUITimer>([this](CVSTGUITimer*) {
         bool changed = false;
-        for (int i = 0; i < kSoloParam; ++i)
+        const int watched[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, kHpfParam, kLpfParam};
+        for (int i : watched)
         {
             const double v = controller->getParamNormalized(static_cast<Steinberg::Vst::ParamID>(i));
             if (std::abs(v - shown[i]) > 1e-6)
@@ -70,9 +71,14 @@ XoverStrip::~XoverStrip()
 CRect XoverStrip::track() const
 {
     CRect r = getViewSize();
-    r.top += 22;           // handle readouts above
-    r.bottom -= 18;        // frequency scale below
+    r.top += 22;           // crossover readouts above
+    r.bottom -= 40;        // the filter row and the frequency scale below
     return r;
+}
+
+double XoverStrip::filterHz(int which) const
+{
+    return Reducer::xoverHz(0, controller->getParamNormalized(which == 0 ? kHpfParam : kLpfParam));
 }
 
 double XoverStrip::hzAt(double x) const
@@ -121,9 +127,50 @@ void XoverStrip::draw(CDrawContext* ctx)
             ctx->drawString(kBandName[b], band, kCenterText);
     }
 
-    // scale
+    // what the output filters cut, darkened
     auto small = makeOwned<CFontDesc>("Arial", 10);
+    const double hpX = xAt(filterHz(0)), lpX = xAt(filterHz(1));
+    ctx->setFillColor(CColor(0, 0, 0, 170));
+    if (Reducer::hpfOn(filterHz(0)))
+        ctx->drawRect(CRect(t.left, t.top, hpX, t.bottom), kDrawFilled);
+    if (Reducer::lpfOn(filterHz(1)))
+        ctx->drawRect(CRect(lpX, t.top, t.right, t.bottom), kDrawFilled);
+
+    // the filter handles, in a row under the strip: HPF from the left end, LPF from the right
+    const double rowTop = t.bottom + 2, rowBottom = t.bottom + 18;
     ctx->setFont(small);
+    for (int which = 0; which < 2; ++which)
+    {
+        const double hz = filterHz(which);
+        const double x = which == 0 ? hpX : lpX;
+        const bool on = which == 0 ? Reducer::hpfOn(hz) : Reducer::lpfOn(hz);
+        const CColor colour = on ? kInk : kDim;
+        ctx->setFrameColor(colour);
+        ctx->setLineWidth(which + 4 == dragging ? 3 : 2);
+        if (on)
+            ctx->drawLine(CPoint(x, t.top), CPoint(x, rowTop));
+        auto tab = owned(ctx->createGraphicsPath());
+        if (tab)
+        {
+            tab->beginSubpath(CPoint(x, rowTop));
+            tab->addLine(CPoint(x + 7, rowBottom - 4));
+            tab->addLine(CPoint(x - 7, rowBottom - 4));
+            tab->closeSubpath();
+            ctx->setFillColor(colour);
+            ctx->drawGraphicsPath(tab, CDrawContext::kPathFilled);
+        }
+        char text[48], note[32];
+        noteName(hz, note, sizeof(note));
+        std::snprintf(text, sizeof(text), "%s  %s", which == 0 ? "HPF" : "LPF", on ? note : "off");
+        ctx->setFontColor(colour);
+        if (which == 0)
+            ctx->drawString(text, CRect(x + 10, rowTop, x + 140, rowBottom), kLeftText);
+        else
+            ctx->drawString(text, CRect(x - 140, rowTop, x - 10, rowBottom), kRightText);
+    }
+
+    // scale
+    const double scaleTop = rowBottom + 4;
     ctx->setFontColor(kDim);
     ctx->setFrameColor(kRule);
     ctx->setLineWidth(1);
@@ -132,11 +179,11 @@ void XoverStrip::draw(CDrawContext* ctx)
     for (int i = 0; i < 8; ++i)
     {
         const double x = xAt(ticks[i]);
-        ctx->drawLine(CPoint(x, t.bottom), CPoint(x, t.bottom + 4));
-        ctx->drawString(tickName[i], CRect(x - 20, t.bottom + 4, x + 20, t.bottom + 18), kCenterText);
+        ctx->drawLine(CPoint(x, scaleTop - 3), CPoint(x, scaleTop + 1));
+        ctx->drawString(tickName[i], CRect(x - 20, scaleTop + 1, x + 20, scaleTop + 15), kCenterText);
     }
-    ctx->drawString("30 Hz", CRect(t.left, t.bottom + 4, t.left + 40, t.bottom + 18), kLeftText);
-    ctx->drawString("16 kHz", CRect(t.right - 40, t.bottom + 4, t.right, t.bottom + 18), kRightText);
+    ctx->drawString("30 Hz", CRect(t.left, scaleTop + 1, t.left + 40, scaleTop + 15), kLeftText);
+    ctx->drawString("16 kHz", CRect(t.right - 40, scaleTop + 1, t.right, scaleTop + 15), kRightText);
 
     // handles with their readouts
     for (int i = 0; i < Reducer::kXovers; ++i)
@@ -160,16 +207,32 @@ CMouseEventResult XoverStrip::onMouseDown(CPoint& where, const CButtonState& but
 {
     if (!buttons.isLeftButton())
         return kMouseEventNotHandled;
-    // the nearest handle takes the drag
+    // the nearest handle takes the drag: the filters from the row under the strip, the
+    // crossovers from the strip and above
     double best = 1e9;
     dragging = -1;
-    for (int i = 0; i < Reducer::kXovers; ++i)
+    if (where.y > track().bottom - 4)
     {
-        const double d = std::abs(where.x - xAt(hzOf(i)));
-        if (d < best)
+        for (int which = 0; which < 2; ++which)
         {
-            best = d;
-            dragging = i;
+            const double d = std::abs(where.x - xAt(filterHz(which)));
+            if (d < best)
+            {
+                best = d;
+                dragging = 4 + which;
+            }
+        }
+    }
+    else
+    {
+        for (int i = 0; i < Reducer::kXovers; ++i)
+        {
+            const double d = std::abs(where.x - xAt(hzOf(i)));
+            if (d < best)
+            {
+                best = d;
+                dragging = i;
+            }
         }
     }
     if (best > 30)
@@ -177,7 +240,7 @@ CMouseEventResult XoverStrip::onMouseDown(CPoint& where, const CButtonState& but
         dragging = -1;
         return kMouseEventHandled;
     }
-    controller->beginEdit(kXoverParam + dragging);
+    controller->beginEdit(paramOf(dragging));
     return onMouseMoved(where, buttons);
 }
 
@@ -188,6 +251,19 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
     // a handle moves in semitones and stops at its neighbours, kXoverGapNotes away
     auto noteOfHz = [](double hz) { return static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hz / 440.0))); };
     int note = noteOfHz(hzAt(where.x));
+    const int lowest = Reducer::kXoverLowNote, highest = Reducer::kXoverLowNote + Reducer::kXoverNotes;
+    if (dragging >= 4)
+    {
+        // the filters stay a major third apart and stop at the strip's ends, where they are off
+        note = dragging == 4 ? std::clamp(note, lowest, noteOfHz(filterHz(1)) - Reducer::kXoverGapNotes)
+                             : std::clamp(note, noteOfHz(filterHz(0)) + Reducer::kXoverGapNotes, highest);
+        const auto id = paramOf(dragging);
+        const auto n = Reducer::xoverNorm(0, Reducer::noteHz(note));
+        controller->setParamNormalized(id, n);
+        controller->performEdit(id, n);
+        invalid();
+        return kMouseEventHandled;
+    }
     const int below = dragging > 0 ? noteOfHz(hzOf(dragging - 1)) + Reducer::kXoverGapNotes : Reducer::kXoverLowNote;
     const int above = dragging < Reducer::kXovers - 1 ? noteOfHz(hzOf(dragging + 1)) - Reducer::kXoverGapNotes
                                                       : Reducer::kXoverLowNote + Reducer::kXoverNotes;
@@ -203,7 +279,7 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
 CMouseEventResult XoverStrip::onMouseUp(CPoint& where, const CButtonState& buttons)
 {
     if (dragging >= 0)
-        controller->endEdit(kXoverParam + dragging);
+        controller->endEdit(paramOf(dragging));
     dragging = -1;
     invalid();
     return kMouseEventHandled;

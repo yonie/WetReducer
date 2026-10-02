@@ -56,6 +56,27 @@ public:
 private:
     int index;
 };
+// An output filter on the crossovers' note grid, "Off" at its own end of the strip.
+class FilterParameter : public XoverParameter
+{
+public:
+    FilterParameter(const Vst::TChar* title, Vst::ParamID id, bool high) : XoverParameter(title, id, 0), high(high)
+    {
+        info.defaultNormalizedValue = high ? 1.0 : 0.0;
+        setNormalized(info.defaultNormalizedValue);
+    }
+    void toString(Vst::ParamValue normalized, Vst::String128 string) const SMTG_OVERRIDE
+    {
+        const double hz = Reducer::xoverHz(0, normalized);
+        if (high ? !Reducer::lpfOn(hz) : !Reducer::hpfOn(hz))
+            UString(string, str16BufferSize(Vst::String128)).fromAscii("Off");
+        else
+            XoverParameter::toString(normalized, string);
+    }
+
+private:
+    bool high;
+};
 // A band amount, 0..100 in 41 steps, printed as the number the panel shows.
 class BandParameter : public Vst::Parameter
 {
@@ -109,6 +130,9 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     const Vst::TChar* leds[] = {STR16("Lamp Bass"), STR16("Lamp Body"), STR16("Lamp Voice"), STR16("Lamp Presence"), STR16("Lamp Air")};
     for (int b = 0; b < Reducer::kBands; ++b)
         parameters.addParameter(leds[b], nullptr, 0, 0.0, Vst::ParameterInfo::kIsReadOnly, kLedParam + b);
+
+    parameters.addParameter(new FilterParameter(STR16("Highpass"), kHpfParam, false));
+    parameters.addParameter(new FilterParameter(STR16("Lowpass"), kLpfParam, true));
 
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
@@ -245,6 +269,14 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
         if (version == 4)
             ++r;                   // version 4 had no 500 ms response in front
         setParamNormalized(kResponseParam, Reducer::responseNorm(std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1)));
+    }
+    if (version >= 6)
+    {
+        double hz = 0.0;
+        if (s.readDouble(hz))
+            setParamNormalized(kHpfParam, Reducer::xoverNorm(0, hz));
+        if (s.readDouble(hz))
+            setParamNormalized(kLpfParam, Reducer::xoverNorm(0, hz));
     }
     return kResultOk;
 }

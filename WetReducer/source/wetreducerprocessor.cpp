@@ -67,6 +67,10 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.solo[id - kSoloParam] = value > 0.5;
     else if (id == kResponseParam)
         pending.response = Reducer::responseIndex(value);
+    else if (id == kHpfParam)
+        pending.hpf = Reducer::xoverHz(0, value);
+    else if (id == kLpfParam)
+        pending.lpf = Reducer::xoverHz(0, value);
 }
 
 // The lamps flash each time a band's tone moves to a new note, brighter the further its knob is
@@ -133,7 +137,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     return kResultOk;
 }
 
-// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0; anything older was a four-band prototype
+// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the output filters; anything older was a four-band prototype
 // and loads with the defaults.
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
@@ -171,6 +175,14 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
                 ++r;               // version 4 had no 500 ms response in front
             st.response = std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1);
         }
+        if (version >= 6)
+        {
+            double hz = 0.0;
+            if (s.readDouble(hz))
+                st.hpf = std::clamp(hz, Reducer::hpfOffHz(), Reducer::lpfOffHz());
+            if (s.readDouble(hz))
+                st.lpf = std::clamp(hz, Reducer::hpfOffHz(), Reducer::lpfOffHz());
+        }
     }
     pending = st;
     engine.setSettings(st);
@@ -182,7 +194,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(5);
+    s.writeInt32(6);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)
@@ -190,6 +202,8 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     for (bool on : pending.solo)
         s.writeInt32(on ? 1 : 0);
     s.writeInt32(pending.response);
+    s.writeDouble(pending.hpf);
+    s.writeDouble(pending.lpf);
     return kResultOk;
 }
 

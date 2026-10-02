@@ -26,8 +26,10 @@ enum WetReducerParams : Steinberg::Vst::ParamID
     kSoloParam     = 9,     // 9..13: solo per band; with any on, only the soloed bands are heard
     kResponseParam = 14,    // SLOW / MEDIUM / FAST / VERY FAST: how quickly the tones follow the music
     kLedParam      = 15,    // 15..19: read-only, each band's lamp, from the processor to the panel
+    kHpfParam      = 20,    // highpass on the whole output, B0..B9; off at the bottom end
+    kLpfParam      = 21,    // lowpass on the whole output, B0..B9; off at the top end
 
-    kParamCount    = 20
+    kParamCount    = 22
 };
 
 //------------------------------------------------------------------------

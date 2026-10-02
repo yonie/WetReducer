@@ -1,4 +1,4 @@
-//------------------------------------------------------------------------
+﻿//------------------------------------------------------------------------
 // Copyright(c) 2026 Yonie.
 //------------------------------------------------------------------------
 // The three crossovers on one frequency strip, 30 Hz to 16 kHz on a log scale (Ronald: "why do
@@ -12,6 +12,7 @@
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/cvstguitimer.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
+#include "wetreducercids.h"
 
 namespace Yonie {
 
@@ -30,6 +31,12 @@ private:
     double hzAt(double x) const;
     double xAt(double hz) const;
     double hzOf(int i) const;
+    double filterHz(int which) const;       // 0 highpass, 1 lowpass
+    // handles 0..3 are the crossovers, 4 the highpass, 5 the lowpass
+    static Steinberg::Vst::ParamID paramOf(int handle)
+    {
+        return static_cast<Steinberg::Vst::ParamID>(handle < 4 ? kXoverParam + handle : (handle == 4 ? kHpfParam : kLpfParam));
+    }
     VSTGUI::CRect track() const;
 
     Steinberg::Vst::EditController* controller;

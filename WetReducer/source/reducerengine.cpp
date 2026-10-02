@@ -322,6 +322,11 @@ void ReducerEngine::prepare(double sampleRate)
 
 void ReducerEngine::reset()
 {
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        hp[ch].reset();
+        lp[ch].reset();
+    }
     trackSplit.reset();
     for (auto& s : drySplit)
         s.reset();
@@ -359,13 +364,32 @@ void ReducerEngine::applyXovers(bool resetTrackers)
             tones[b].setEdges(edges[b], edges[b + 1]);
         tones[b].setResponse(current.response);
     }
+    applyFilters();
+}
+
+void ReducerEngine::applyFilters()
+{
+    // 24 dB/oct (Linkwitz-Riley), -6 dB at the handle; coefficients only, so a drag does not click
+    hpOn = Reducer::hpfOn(current.hpf);
+    lpOn = Reducer::lpfOn(current.lpf);
+    const double top = fs * 0.45;
+    for (int ch = 0; ch < 2; ++ch)
+    {
+        hp[ch].a.setHighpass(std::min(current.hpf, top), fs);
+        hp[ch].b.setHighpass(std::min(current.hpf, top), fs);
+        lp[ch].a.setLowpass(std::min(current.lpf, top), fs);
+        lp[ch].b.setLowpass(std::min(current.lpf, top), fs);
+    }
 }
 
 void ReducerEngine::setSettings(const Settings& s)
 {
+    const bool filtersChanged = s.hpf != current.hpf || s.lpf != current.lpf;
     const bool xoverChanged = s.xover != current.xover;
     const bool responseChanged = s.response != current.response;
     current = s;
+    if (filtersChanged)
+        applyFilters();
     if (xoverChanged)
         applyXovers(false);
     else if (responseChanged)
@@ -411,6 +435,16 @@ void ReducerEngine::process(const float* inL, const float* inR, float* outL, flo
             const double v = current.amount[b];
             yl += (1.0 - v) * bl[b] + v * tone[b];
             yr += (1.0 - v) * br[b] + v * tone[b];
+        }
+        if (hpOn)
+        {
+            yl = hp[0].tick(yl);
+            yr = hp[1].tick(yr);
+        }
+        if (lpOn)
+        {
+            yl = lp[0].tick(yl);
+            yr = lp[1].tick(yr);
         }
         outL[i] = static_cast<float>(yl);
         outR[i] = static_cast<float>(yr);
