@@ -29,6 +29,7 @@ namespace Yonie {
 namespace Reducer {
 constexpr int kBands = 5;
 constexpr int kXovers = kBands - 1;
+constexpr int kVoices = 3;               // tones per band: the loudest notes in it, up to three
 constexpr double kShapeStart = 0.25;     // the square comes in over the last 75% of the travel
 constexpr int kLatency = 8192;           // half of the largest window, fixed for every rate
 constexpr int kMaxWindow = 2 * kLatency;
@@ -142,11 +143,20 @@ private:
     int writePos = 0, sinceHop = 0;
     std::vector<double> hann;
     std::vector<std::complex<double>> fftBuf;
-    std::vector<int> history;       // snapped notes, newest last, for the hold
-    int heldNote = -1, changes = 0;
-    double freq = 0.0, freqTarget = 0.0;
+    // One voice per note found in the band. Each holds its own note and carries its share of
+    // the band's level, so all voices together are as loud as the band.
+    struct Voice
+    {
+        std::vector<int> history;   // snapped notes, newest last, for the hold
+        int held = -1;
+        double freq = 0.0, freqTarget = 0.0;
+        double weight = 0.0, weightTarget = 0.0;
+        double phase = 0.0;
+    };
+    std::array<Voice, Reducer::kVoices> voices;
+    double weightGlide = 0.001;
+    int changes = 0;
     double level = 0.0, levelTarget = 0.0, levelStep = 0.0;
-    double phase = 0.0;
 };
 
 //------------------------------------------------------------------------

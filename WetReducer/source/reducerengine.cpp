@@ -161,11 +161,10 @@ void BandTone::reset()
 {
     std::fill(ring.begin(), ring.end(), 0.0);
     writePos = sinceHop = 0;
-    history.clear();
-    heldNote = -1;
-    freq = freqTarget = 0.0;
+    for (auto& v : voices)
+        v = Voice();
+    weightGlide = 1.0 - std::exp(-1.0 / (0.01 * fs));     // a voice fades in or out over ~10 ms
     level = levelTarget = levelStep = 0.0;
-    phase = 0.0;
 }
 
 void BandTone::analyse()
@@ -181,47 +180,87 @@ void BandTone::analyse()
     }
     fft(fftBuf);
 
+    // Every spectral peak in the band, as a snapped note; one entry per note, the loudest wins.
     const int k0 = std::max(1, static_cast<int>(lo * window / fs));
     const int k1 = std::min(window / 2 - 2, static_cast<int>(hi * window / fs) + 1);
-    int best = k0;
-    double bestMag = -1.0;
+    struct Peak
+    {
+        int note;
+        double mag;
+    };
+    std::vector<Peak> peaks;
     for (int k = k0; k <= k1; ++k)
     {
         const double m = std::abs(fftBuf[k]);
-        if (m > bestMag)
-        {
-            bestMag = m;
-            best = k;
-        }
-    }
-    double kf = best;
-    if (best > 0 && best < window / 2 - 1)
-    {
-        const double a = std::log(std::abs(fftBuf[best - 1]) + 1e-12);
-        const double b = std::log(std::abs(fftBuf[best]) + 1e-12);
-        const double c = std::log(std::abs(fftBuf[best + 1]) + 1e-12);
+        if (m <= 0.0 || m <= std::abs(fftBuf[k - 1]) || m < std::abs(fftBuf[k + 1]))
+            continue;
+        const double a = std::log(std::abs(fftBuf[k - 1]) + 1e-12);
+        const double b = std::log(m + 1e-12);
+        const double c = std::log(std::abs(fftBuf[k + 1]) + 1e-12);
         const double d = a - 2.0 * b + c;
-        if (std::abs(d) > 1e-12)
-            kf = best + 0.5 * (a - c) / d;
+        const double kf = std::abs(d) > 1e-12 ? k + 0.5 * (a - c) / d : k;
+        const double f = std::max(1.0, kf * fs / window);
+        const int note = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(f / 440.0)));
+        auto same = std::find_if(peaks.begin(), peaks.end(), [note](const Peak& p) { return p.note == note; });
+        if (same == peaks.end())
+            peaks.push_back({note, m});
+        else
+            same->mag = std::max(same->mag, m);
     }
-    const double f = std::max(1.0, kf * fs / window);
-    const int note = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(f / 440.0)));
-
-    // Hold: the tone follows the median of the last `hold` snapped notes.
-    history.push_back(note);
-    if (static_cast<int>(history.size()) > hold)
-        history.erase(history.begin());
-    std::vector<int> sorted(history);
-    std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
-    const int held = sorted[sorted.size() / 2];
-    if (held != heldNote)
+    // The loudest kVoices notes, ignoring any more than 12 dB under the loudest.
+    std::sort(peaks.begin(), peaks.end(), [](const Peak& x, const Peak& y) { return x.mag > y.mag; });
+    if (peaks.size() > static_cast<size_t>(Reducer::kVoices))
+        peaks.resize(Reducer::kVoices);
+    if (!peaks.empty())
     {
-        heldNote = held;
-        ++changes;
+        const double floorMag = peaks.front().mag * 0.25;
+        peaks.erase(std::remove_if(peaks.begin(), peaks.end(), [floorMag](const Peak& p) { return p.mag < floorMag; }),
+                    peaks.end());
     }
-    freqTarget = 440.0 * std::pow(2.0, (held - 69) / 12.0);
-    if (freq <= 0.0)
-        freq = freqTarget;
+    double power = 0.0;
+    for (const auto& p : peaks)
+        power += p.mag * p.mag;
+    const double norm = power > 0.0 ? 1.0 / std::sqrt(power) : 0.0;
+
+    // Each note goes to the free voice nearest to it, so a voice keeps following one line.
+    bool used[Reducer::kVoices] = {};
+    for (const auto& p : peaks)
+    {
+        int best = 0;
+        int bestCost = 1 << 30;
+        for (int v = 0; v < Reducer::kVoices; ++v)
+        {
+            if (used[v])
+                continue;
+            const int cost = voices[v].held < 0 || voices[v].weightTarget <= 0.0 ? 48 : std::abs(voices[v].held - p.note);
+            if (cost < bestCost)
+            {
+                bestCost = cost;
+                best = v;
+            }
+        }
+        used[best] = true;
+        Voice& vc = voices[best];
+        // Hold: the voice follows the median of its last `hold` notes.
+        vc.history.push_back(p.note);
+        if (static_cast<int>(vc.history.size()) > hold)
+            vc.history.erase(vc.history.begin());
+        std::vector<int> sorted(vc.history);
+        std::nth_element(sorted.begin(), sorted.begin() + sorted.size() / 2, sorted.end());
+        const int held = sorted[sorted.size() / 2];
+        if (held != vc.held)
+        {
+            vc.held = held;
+            ++changes;
+        }
+        vc.freqTarget = 440.0 * std::pow(2.0, (held - 69) / 12.0);
+        if (vc.freq <= 0.0 || vc.weight < 0.01)
+            vc.freq = vc.freqTarget;     // a voice coming in starts on its note, no glide from an old one
+        vc.weightTarget = p.mag * norm;
+    }
+    for (int v = 0; v < Reducer::kVoices; ++v)
+        if (!used[v])
+            voices[v].weightTarget = 0.0;
 
     // Level: RMS around the played sample over levelHops hops, reached by the next analysis.
     double sum = 0.0;
@@ -248,19 +287,27 @@ double BandTone::tick(double bandSample, double shape)
     level += levelStep;
     if ((levelStep > 0 && level > levelTarget) || (levelStep < 0 && level < levelTarget))
         level = levelTarget;
-    freq += (freqTarget - freq) * response.glide;     // glide, so a note change does not click
 
-    const double dt = freq / fs;
-    phase += dt;
-    if (phase >= 1.0)
-        phase -= 1.0;
-    // Equal loudness at both ends: a sine of peak sqrt(2)*level and a square of peak level
-    // both have RMS = level.
-    const double sine = std::sin(2.0 * kPi * phase) * std::sqrt(2.0);
-    double square = phase < 0.5 ? 1.0 : -1.0;
-    square += polyBlep(phase, dt);
-    square -= polyBlep(std::fmod(phase + 0.5, 1.0), dt);
-    return level * ((1.0 - shape) * sine + shape * square);
+    // Equal loudness at both ends: a sine of peak sqrt(2) and a square of peak 1 both have
+    // RMS 1, and the voices' weights add up (as power) to 1, so the band keeps its level.
+    double out = 0.0;
+    for (auto& v : voices)
+    {
+        v.weight += (v.weightTarget - v.weight) * weightGlide;
+        if (v.weight < 1e-5 || v.freq <= 0.0)
+            continue;
+        v.freq += (v.freqTarget - v.freq) * response.glide;     // glide, so a note change does not click
+        const double dt = v.freq / fs;
+        v.phase += dt;
+        if (v.phase >= 1.0)
+            v.phase -= 1.0;
+        const double sine = std::sin(2.0 * kPi * v.phase) * std::sqrt(2.0);
+        double square = v.phase < 0.5 ? 1.0 : -1.0;
+        square += polyBlep(v.phase, dt);
+        square -= polyBlep(std::fmod(v.phase + 0.5, 1.0), dt);
+        out += v.weight * ((1.0 - shape) * sine + shape * square);
+    }
+    return level * out;
 }
 
 //------------------------------------------------------------------------
