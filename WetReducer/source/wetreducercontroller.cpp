@@ -273,6 +273,7 @@ VSTGUI::CView* WetReducerController::createCustomView(VSTGUI::UTF8StringPtr name
     return nullptr;
 }
 
+// The processor's saved state, version 1 (see wetreducerprocessor.cpp for the layout).
 tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
 {
     if (!state)
@@ -281,8 +282,8 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
     int32 version = 0;
     if (!s.readInt32(version))
         return kResultFalse;
-    if (version < 4)
-        return kResultOk;          // a four-band prototype session: keep the defaults
+    if (version != 1)
+        return kResultOk;
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         double v = 0.0;
@@ -303,28 +304,15 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
     }
     int32 r = Reducer::kResponseDefault;
     if (s.readInt32(r))
-    {
-        if (version == 4)
-            ++r;                   // version 4 had no 500 ms response in front
-        if (version < 10)
-            r = Reducer::responseFromFour(r);
         setParamNormalized(kResponseParam, Reducer::responseNorm(std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1)));
-    }
-    if (version >= 6)
-    {
-        double hz = 0.0;
-        if (s.readDouble(hz))
-            setParamNormalized(kLowEdgeParam, Reducer::xoverNorm(0, hz));
-        if (s.readDouble(hz))
-            setParamNormalized(kHighEdgeParam, Reducer::xoverNorm(0, hz));
-    }
-    if (version >= 7)
-    {
-        int32 n = Reducer::kVoicesDefault;
-        if (s.readInt32(n))
-            setParamNormalized(kVoicesParam, Reducer::voicesNorm(n));
-    }
-
+    double hz = 0.0;
+    if (s.readDouble(hz))
+        setParamNormalized(kLowEdgeParam, Reducer::xoverNorm(0, hz));
+    if (s.readDouble(hz))
+        setParamNormalized(kHighEdgeParam, Reducer::xoverNorm(0, hz));
+    int32 n = Reducer::kVoicesDefault;
+    if (s.readInt32(n))
+        setParamNormalized(kVoicesParam, Reducer::voicesNorm(n));
     return kResultOk;
 }
 

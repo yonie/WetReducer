@@ -6,6 +6,7 @@
 
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "reducerengine.h"
+#include "monobus.h"
 #include "wetreducercids.h"
 
 namespace Yonie {
@@ -37,6 +38,7 @@ private:
     void sendLeds(Steinberg::Vst::ProcessData& data);
 
     ReducerEngine engine;
+    Wet::MonoBus monoBus;
     ReducerEngine::Settings pending;
     double led[Reducer::kBands] = {};
     double sentLed[Reducer::kBands] = {};

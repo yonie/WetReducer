@@ -29,19 +29,20 @@ tresult PLUGIN_API WetReducerProcessor::initialize(FUnknown* context)
     return kResultOk;
 }
 
-// Prototype: stereo only.
 tresult PLUGIN_API WetReducerProcessor::setBusArrangements(Vst::SpeakerArrangement* inputs, int32 numIns,
                                                           Vst::SpeakerArrangement* outputs, int32 numOuts)
 {
-    if (numIns == 1 && numOuts == 1 && inputs[0] == Vst::SpeakerArr::kStereo && outputs[0] == Vst::SpeakerArr::kStereo)
-        return AudioEffect::setBusArrangements(inputs, numIns, outputs, numOuts);
-    return kResultFalse;
+    // All four mono/stereo layouts (settled decision 24); monobus.h turns mono into stereo.
+    if (!Wet::MonoBus::accepts(inputs, numIns, outputs, numOuts))
+        return kResultFalse;
+    return AudioEffect::setBusArrangements(inputs, numIns, outputs, numOuts);
 }
 
 tresult PLUGIN_API WetReducerProcessor::setupProcessing(Vst::ProcessSetup& newSetup)
 {
     engine.prepare(newSetup.sampleRate);
     engine.setSettings(pending);
+    monoBus.prepare(newSetup.maxSamplesPerBlock);
     return AudioEffect::setupProcessing(newSetup);
 }
 
@@ -130,16 +131,27 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     if (data.numInputs == 0 || data.numOutputs == 0 || data.numSamples <= 0)
         return kResultOk;
 
-    float** in = data.inputs[0].channelBuffers32;
-    float** out = data.outputs[0].channelBuffers32;
-    engine.process(in[0], in[1], out[0], out[1], data.numSamples);
+    // Mono buses become stereo here: see monobus.h.
+    float *inL, *inR, *outL, *outR;
+    if (!monoBus.begin(data.inputs[0], data.outputs[0], data.numSamples, inL, inR, outL, outR))
+        return kResultOk;
+    engine.process(inL, inR, outL, outR, data.numSamples);
+    monoBus.end(data.outputs[0], data.numSamples, outL, outR);
     data.outputs[0].silenceFlags = 0;
     sendLeds(data);
     return kResultOk;
 }
-
-// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the band edges, version 7 the voice count, version 8 two switches that are fixed now (9 drops them; they were last, so 8 still reads), version 10 two responses instead of four; anything older was a four-band prototype
-// and loads with the defaults.
+// Saved state, version 1 - the format the first release ships with (prototype formats are gone,
+// AGENTS.md). Every field says what it means rather than which step it was on, so a later change
+// to a control's grid cannot silently move a saved setting (hub AGENTS.md, settled decision 16):
+//   int32  version (1)
+//   double amount[5]      band knob position 0..1 (0 the original, 0.5 all sine, 1 all square)
+//   double xover[4]       the four splits, in Hz
+//   int32  solo[5]        0 / 1
+//   int32  response       0 SLOW, 1 FAST
+//   double lowEdge        where BASS starts, Hz (at the bottom of the grid: off)
+//   double highEdge       where AIR ends, Hz (at the top of the grid: off)
+//   int32  voices         1..8
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
     if (!state)
@@ -149,7 +161,7 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
     if (!s.readInt32(version))
         return kResultFalse;
     ReducerEngine::Settings st;
-    if (version >= 4)
+    if (version == 1)
     {
         for (auto& a : st.amount)
         {
@@ -171,27 +183,15 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         }
         int32 r = Reducer::kResponseDefault;
         if (s.readInt32(r))
-        {
-            if (version == 4)
-                ++r;               // version 4 had no 500 ms response in front
-            if (version < 10)
-                r = Reducer::responseFromFour(r);
             st.response = std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1);
-        }
-        if (version >= 6)
-        {
-            double hz = 0.0;
-            if (s.readDouble(hz))
-                st.lowEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
-            if (s.readDouble(hz))
-                st.highEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
-        }
-        if (version >= 7)
-        {
-            int32 n = Reducer::kVoicesDefault;
-            if (s.readInt32(n))
-                st.voices = std::clamp(static_cast<int>(n), 1, Reducer::kVoices);
-        }
+        double hz = 0.0;
+        if (s.readDouble(hz))
+            st.lowEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
+        if (s.readDouble(hz))
+            st.highEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
+        int32 n = Reducer::kVoicesDefault;
+        if (s.readInt32(n))
+            st.voices = std::clamp(static_cast<int>(n), 1, Reducer::kVoices);
     }
     pending = st;
     engine.setSettings(st);
@@ -203,7 +203,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(10);
+    s.writeInt32(1);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)
