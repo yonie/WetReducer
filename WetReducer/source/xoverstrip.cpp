@@ -117,7 +117,7 @@ void XoverStrip::draw(CDrawContext* ctx)
     // outer two, where the music passes as it is.
     for (int b = 0; b < Reducer::kBands; ++b)
     {
-        const double x0 = x[b] + 3.0, x1 = x[b + 1] - 3.0;
+        const double x0 = x[b] + g.lineInset, x1 = x[b + 1] - g.lineInset;
         if (x1 <= x0)
             continue;
         ctx->setFillColor(g.band[b]);

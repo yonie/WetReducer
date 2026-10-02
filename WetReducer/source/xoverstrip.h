@@ -29,6 +29,7 @@ struct StripGeometry
 {
     double trackX0 = 0, trackX1 = 1;    // where note kXoverLowNote and the top note sit
     double lineY = 0, lineH = 6;        // the coloured line under the slot (centre, thickness)
+    double lineInset = 3;               // how far each band's stretch stops short of a cap's centre
     double capY = 0;                    // the caps' centre line
     VSTGUI::CColor band[Reducer::kBands];
     VSTGUI::SharedPointer<VSTGUI::CBitmap> cap[Reducer::kBands + 1];

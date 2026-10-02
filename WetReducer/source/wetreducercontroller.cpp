@@ -250,6 +250,7 @@ VSTGUI::CView* WetReducerController::createCustomView(VSTGUI::UTF8StringPtr name
         g.trackX1 = number("track-x1", rect.right);
         g.lineY = number("line-y", rect.bottom - 4);
         g.lineH = number("line-h", 6);
+        g.lineInset = number("line-inset", 3);
         g.capY = number("cap-y", rect.getCenter().y);
         if (auto* v = attributes.getAttributeValue("band-colors"))
         {
