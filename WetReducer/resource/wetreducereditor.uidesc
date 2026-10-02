@@ -32,8 +32,6 @@
 		<control-tag name="kS4" tag="13"/>
 		<control-tag name="kResp" tag="14"/>
 		<control-tag name="kVoices" tag="22"/>
-		<control-tag name="kPrio" tag="23"/>
-		<control-tag name="kQuiet" tag="24"/>
 		<control-tag name="kL0" tag="15"/>
 		<control-tag name="kL1" tag="16"/>
 		<control-tag name="kL2" tag="17"/>
@@ -44,10 +42,6 @@
 		<view class="CTextLabel" origin="24, 14" size="200, 28" title="WET REDUCER" font="title" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 40" size="240, 18" title="multiband tone reducer - prototype" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 56" size="160, 14" title="0 off  /  50 sine  /  100 square" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="24, 78" size="120, 16" title="PRIORITY" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="COptionMenu" origin="24, 96" size="110, 20" control-tag="kPrio" font="value" font-color="ink" back-color="track" frame-color="rule" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
-		<view class="CTextLabel" origin="24, 122" size="120, 16" title="QUIET NOTES" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="COptionMenu" origin="24, 140" size="110, 20" control-tag="kQuiet" font="value" font-color="ink" back-color="track" frame-color="rule" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
 		<view class="CTextLabel" origin="24, 166" size="120, 16" title="RESPONSE" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 222" size="120, 16" title="VOICES" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CControl" custom-view-name="VoiceSelect" origin="24, 242" size="110, 44" control-tag="kVoices" transparent="true"/>

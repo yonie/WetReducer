@@ -73,10 +73,7 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.highEdge = Reducer::xoverHz(0, value);
     else if (id == kVoicesParam)
         pending.voices = Reducer::voicesOf(value);
-    else if (id == kPriorityParam)
-        pending.lowestFirst = value > 0.5;
-    else if (id == kQuietParam)
-        pending.keepQuiet = value < 0.5;
+
 }
 
 // The lamps blink: on for 60 ms each time a band's tone moves to a new note, then off - no
@@ -141,7 +138,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     return kResultOk;
 }
 
-// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the band edges, version 7 the voice count, version 8 the two picking switches; anything older was a four-band prototype
+// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the band edges, version 7 the voice count, version 8 two switches that are fixed now (9 drops them; they were last, so 8 still reads); anything older was a four-band prototype
 // and loads with the defaults.
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
@@ -193,17 +190,6 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
             if (s.readInt32(n))
                 st.voices = std::clamp(static_cast<int>(n), 1, Reducer::kVoices);
         }
-        // before version 8 a band always took its loudest notes and skipped quiet ones
-        st.lowestFirst = false;
-        st.keepQuiet = false;
-        if (version >= 8)
-        {
-            int32 v = 0;
-            if (s.readInt32(v))
-                st.lowestFirst = v != 0;
-            if (s.readInt32(v))
-                st.keepQuiet = v != 0;
-        }
     }
     pending = st;
     engine.setSettings(st);
@@ -215,7 +201,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(8);
+    s.writeInt32(9);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)
@@ -226,8 +212,6 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     s.writeDouble(pending.lowEdge);
     s.writeDouble(pending.highEdge);
     s.writeInt32(pending.voices);
-    s.writeInt32(pending.lowestFirst ? 1 : 0);
-    s.writeInt32(pending.keepQuiet ? 1 : 0);
     return kResultOk;
 }
 

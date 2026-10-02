@@ -140,22 +140,6 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
                             Reducer::voicesNorm(Reducer::kVoicesDefault), Vst::ParameterInfo::kCanAutomate,
                             kVoicesParam);
 
-    // prototype switches: which notes win, and whether quiet ones still get a voice
-    auto* priority = new Vst::StringListParameter(STR16("Priority"), kPriorityParam, nullptr,
-                                                  Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
-    priority->appendString(STR16("Loudest"));
-    priority->appendString(STR16("Lowest"));
-    priority->getInfo().defaultNormalizedValue = 1.0;
-    priority->setNormalized(1.0);
-    parameters.addParameter(priority);
-    auto* quiet = new Vst::StringListParameter(STR16("Quiet notes"), kQuietParam, nullptr,
-                                               Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
-    quiet->appendString(STR16("Keep"));
-    quiet->appendString(STR16("Skip"));
-    quiet->getInfo().defaultNormalizedValue = 1.0;     // Skip (Ronald, 2026-10-02)
-    quiet->setNormalized(1.0);
-    parameters.addParameter(quiet);
-
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
     response->appendString(STR16("Slow"));
@@ -313,15 +297,7 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
         if (s.readInt32(n))
             setParamNormalized(kVoicesParam, Reducer::voicesNorm(n));
     }
-    // before version 8: loudest notes, quiet ones skipped
-    int32 lowest = 0, keep = 0;
-    if (version >= 8)
-    {
-        s.readInt32(lowest);
-        s.readInt32(keep);
-    }
-    setParamNormalized(kPriorityParam, lowest ? 1.0 : 0.0);
-    setParamNormalized(kQuietParam, keep ? 0.0 : 1.0);
+
     return kResultOk;
 }
 
