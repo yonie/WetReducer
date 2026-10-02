@@ -8,6 +8,7 @@
 #include "pluginterfaces/vst/ivstparameterchanges.h"
 
 #include <algorithm>
+#include <cmath>
 
 using namespace Steinberg;
 
@@ -68,6 +69,38 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.response = std::clamp(static_cast<int>(value * 2.0 + 0.5), 0, 2);
 }
 
+// The lamps: lit when the band has music for its tracker to follow (from -60 dBFS, fully at
+// -30), and brighter the further its knob is turned. A band silenced by another band's solo
+// glows faintly. They fall off over about a quarter second, like the meters in the rest of the line.
+void WetReducerProcessor::sendLeds(Vst::ProcessData& data)
+{
+    const auto& st = engine.settings();
+    bool anySolo = false;
+    for (bool on : st.solo)
+        anySolo = anySolo || on;
+    const double fall = std::exp(-data.numSamples / (0.25 * std::max(1.0, processSetup.sampleRate)));
+    for (int b = 0; b < Reducer::kBands; ++b)
+    {
+        const double db = 20.0 * std::log10(engine.bandLevel(b) + 1e-9);
+        const double caught = std::clamp((db + 60.0) / 30.0, 0.0, 1.0);
+        double lit = caught > 0.0 ? 0.2 + 0.8 * caught : 0.0;
+        lit *= 0.35 + 0.65 * st.amount[b];
+        if (anySolo && !st.solo[b])
+            lit *= 0.25;
+        led[b] = std::max(lit, led[b] * fall);
+        if (data.outputParameterChanges && std::abs(led[b] - sentLed[b]) > 0.004)
+        {
+            int32 index = 0;
+            if (auto* q = data.outputParameterChanges->addParameterData(kLedParam + b, index))
+            {
+                int32 point = 0;
+                q->addPoint(0, led[b], point);
+                sentLed[b] = led[b];
+            }
+        }
+    }
+}
+
 tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
 {
     if (data.inputParameterChanges)
@@ -90,6 +123,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     float** out = data.outputs[0].channelBuffers32;
     engine.process(in[0], in[1], out[0], out[1], data.numSamples);
     data.outputs[0].silenceFlags = 0;
+    sendLeds(data);
     return kResultOk;
 }
 

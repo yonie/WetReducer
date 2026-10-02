@@ -51,13 +51,21 @@ constexpr double kXoverMax[kXovers] = {16000.0, 16000.0, 16000.0, 16000.0};
 constexpr double kXoverGap = 1.25;          // a band is at least a major third wide
 constexpr double kXoverDefaultHz[kXovers] = {123.4708, 493.8833, 2093.0045, 6271.9270};    // B2 B4 C7 G8
 
-inline double xoverHz(int i, double norm)
+// The crossovers move in semitones (Ronald: "the sliders should map to notes"), from B0 to B9.
+constexpr int kXoverLowNote = 23;            // B0, 30.9 Hz
+constexpr int kXoverNotes = 100;             // up to B9, 15.8 kHz
+constexpr int kXoverGapNotes = 4;            // neighbouring splits at least a major third apart
+
+inline double noteHz(int midi) { return 440.0 * std::pow(2.0, (midi - 69) / 12.0); }
+inline int xoverNote(double norm)
 {
-    return kXoverMin[i] * std::pow(kXoverMax[i] / kXoverMin[i], std::clamp(norm, 0.0, 1.0));
+    return kXoverLowNote + static_cast<int>(std::lround(std::clamp(norm, 0.0, 1.0) * kXoverNotes));
 }
-inline double xoverNorm(int i, double hz)
+inline double xoverHz(int /*i*/, double norm) { return noteHz(xoverNote(norm)); }
+inline double xoverNorm(int /*i*/, double hz)
 {
-    return std::log(std::clamp(hz, kXoverMin[i], kXoverMax[i]) / kXoverMin[i]) / std::log(kXoverMax[i] / kXoverMin[i]);
+    const int midi = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(std::max(hz, 1.0) / 440.0)));
+    return std::clamp(midi - kXoverLowNote, 0, kXoverNotes) / static_cast<double>(kXoverNotes);
 }
 } // namespace Reducer
 
@@ -113,6 +121,7 @@ public:
     // Feed one undelayed mono band sample; returns the tone for the sample now being played
     // (kLatency samples ago), at the given shape (0 sine, 1 square).
     double tick(double bandSample, double shape);
+    double currentLevel() const { return level; }     // RMS of the band being played
 
 private:
     void analyse();
@@ -147,6 +156,7 @@ public:
     void reset();
     void setSettings(const Settings& s);
     const Settings& settings() const { return current; }
+    double bandLevel(int b) const { return tones[b].currentLevel(); }
     void process(const float* inL, const float* inR, float* outL, float* outR, int n);
 
 private:

@@ -30,6 +30,10 @@ smtg_add_vst3plugin(WetReducer
     source/weteditor.h
     source/xoverstrip.h
     source/xoverstrip.cpp
+    source/steppedknob.h
+    source/steppedknob.cpp
+    source/bandled.h
+    source/bandled.cpp
 )
 
 if(SMTG_ENABLE_VSTGUI_SUPPORT)

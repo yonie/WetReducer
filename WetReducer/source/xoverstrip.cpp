@@ -29,16 +29,16 @@ const CColor kHandle(95, 179, 201);
 const CColor kBand[5] = {CColor(0xd9, 0x59, 0x26), CColor(0x90, 0x85, 0xe9), CColor(0xc9, 0x85, 0x00),
                          CColor(0x19, 0x9e, 0x70), CColor(0x39, 0x87, 0xe5)};
 const char* kBandName[5] = {"BASS", "BODY", "VOICE", "PRESENCE", "AIR"};
-const double kLo = 30.0, kHi = 16000.0;
+const double kLo = 30.0, kHi = 16000.0;      // the strip's scale; handles live on B0..B9
 
 void noteName(double hz, char* out, size_t n)
 {
     static const char* names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     const int midi = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hz / 440.0)));
     if (hz < 1000.0)
-        std::snprintf(out, n, "%.0f Hz %s%d", hz, names[(midi % 12 + 12) % 12], midi / 12 - 1);
+        std::snprintf(out, n, "%s%d  %.0f Hz", names[(midi % 12 + 12) % 12], midi / 12 - 1, hz);
     else
-        std::snprintf(out, n, "%.2f kHz %s%d", hz / 1000.0, names[(midi % 12 + 12) % 12], midi / 12 - 1);
+        std::snprintf(out, n, "%s%d  %.2f kHz", names[(midi % 12 + 12) % 12], midi / 12 - 1, hz / 1000.0);
 }
 } // namespace
 
@@ -185,13 +185,15 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
 {
     if (dragging < 0 || !buttons.isLeftButton())
         return kMouseEventNotHandled;
-    // a handle stops at its neighbours, at least kXoverGap away
-    double hz = hzAt(where.x);
-    const double below = dragging > 0 ? hzOf(dragging - 1) * Reducer::kXoverGap : kLo;
-    const double above = dragging < Reducer::kXovers - 1 ? hzOf(dragging + 1) / Reducer::kXoverGap : kHi;
-    hz = std::clamp(hz, below, above);
+    // a handle moves in semitones and stops at its neighbours, kXoverGapNotes away
+    auto noteOfHz = [](double hz) { return static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hz / 440.0))); };
+    int note = noteOfHz(hzAt(where.x));
+    const int below = dragging > 0 ? noteOfHz(hzOf(dragging - 1)) + Reducer::kXoverGapNotes : Reducer::kXoverLowNote;
+    const int above = dragging < Reducer::kXovers - 1 ? noteOfHz(hzOf(dragging + 1)) - Reducer::kXoverGapNotes
+                                                      : Reducer::kXoverLowNote + Reducer::kXoverNotes;
+    note = std::clamp(note, below, above);
     const auto id = static_cast<Steinberg::Vst::ParamID>(kXoverParam + dragging);
-    const auto n = Reducer::xoverNorm(dragging, hz);
+    const auto n = Reducer::xoverNorm(dragging, Reducer::noteHz(note));
     controller->setParamNormalized(id, n);
     controller->performEdit(id, n);
     invalid();

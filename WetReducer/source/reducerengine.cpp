@@ -287,7 +287,7 @@ void ReducerEngine::applyXovers(bool resetTrackers)
     for (int i = 0; i < Reducer::kXovers; ++i)
         fc[i] = std::clamp(current.xover[i], Reducer::kXoverMin[i], Reducer::kXoverMax[i]);
     for (int i = 1; i < Reducer::kXovers; ++i)
-        fc[i] = std::max(fc[i], fc[i - 1] * Reducer::kXoverGap);
+        fc[i] = std::max(fc[i], fc[i - 1] * std::pow(2.0, Reducer::kXoverGapNotes / 12.0) * 0.999);
     const double top = std::min(20000.0, fs * 0.45);
     fc[Reducer::kXovers - 1] = std::min(fc[Reducer::kXovers - 1], top / Reducer::kXoverGap);
     trackSplit.set(fc, fs);

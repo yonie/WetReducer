@@ -7,6 +7,8 @@
 #include "reducerengine.h"
 #include "weteditor.h"
 #include "xoverstrip.h"
+#include "steppedknob.h"
+#include "bandled.h"
 #include "vstgui/uidescription/uiattributes.h"
 
 #include "base/source/fstreamer.h"
@@ -31,7 +33,7 @@ public:
     {
         UString(info.title, str16BufferSize(Vst::String128)).assign(title);
         info.id = id;
-        info.stepCount = 0;
+        info.stepCount = Reducer::kXoverNotes;      // one step per semitone
         info.defaultNormalizedValue = Reducer::xoverNorm(index, Reducer::kXoverDefaultHz[index]);
         info.flags = Vst::ParameterInfo::kCanAutomate;
         setNormalized(info.defaultNormalizedValue);
@@ -39,13 +41,13 @@ public:
     void toString(Vst::ParamValue normalized, Vst::String128 string) const SMTG_OVERRIDE
     {
         static const char* notes[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
-        const double hz = Reducer::xoverHz(index, normalized);
-        const int midi = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hz / 440.0)));
+        const int midi = Reducer::xoverNote(normalized);
+        const double hz = Reducer::noteHz(midi);
         char text[64];
         if (hz < 1000.0)
-            std::snprintf(text, sizeof(text), "%.0f Hz  %s%d", hz, notes[(midi % 12 + 12) % 12], midi / 12 - 1);
+            std::snprintf(text, sizeof(text), "%s%d  %.0f Hz", notes[midi % 12], midi / 12 - 1, hz);
         else
-            std::snprintf(text, sizeof(text), "%.2f kHz  %s%d", hz / 1000.0, notes[(midi % 12 + 12) % 12], midi / 12 - 1);
+            std::snprintf(text, sizeof(text), "%s%d  %.2f kHz", notes[midi % 12], midi / 12 - 1, hz / 1000.0);
         UString(string, str16BufferSize(Vst::String128)).fromAscii(text);
     }
     Vst::ParamValue toPlain(Vst::ParamValue normalized) const SMTG_OVERRIDE { return Reducer::xoverHz(index, normalized); }
@@ -53,6 +55,32 @@ public:
 
 private:
     int index;
+};
+// A band amount, 0..100 in 41 steps, printed as the number the panel shows.
+class BandParameter : public Vst::Parameter
+{
+public:
+    BandParameter(const Vst::TChar* title, Vst::ParamID id)
+    {
+        UString(info.title, str16BufferSize(Vst::String128)).assign(title);
+        UString(info.units, str16BufferSize(Vst::String128)).assign(STR16("%"));
+        info.id = id;
+        info.stepCount = 40;
+        info.defaultNormalizedValue = 0.0;
+        info.flags = Vst::ParameterInfo::kCanAutomate;
+    }
+    void toString(Vst::ParamValue normalized, Vst::String128 string) const SMTG_OVERRIDE
+    {
+        char text[32];
+        const double v = std::round(normalized * 40.0) * 2.5;
+        if (v == std::floor(v))
+            std::snprintf(text, sizeof(text), "%.0f", v);
+        else
+            std::snprintf(text, sizeof(text), "%.1f", v);
+        UString(string, str16BufferSize(Vst::String128)).fromAscii(text);
+    }
+    Vst::ParamValue toPlain(Vst::ParamValue normalized) const SMTG_OVERRIDE { return normalized * 100.0; }
+    Vst::ParamValue toNormalized(Vst::ParamValue plain) const SMTG_OVERRIDE { return plain / 100.0; }
 };
 } // namespace
 
@@ -65,10 +93,8 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     const Vst::TChar* bands[] = {STR16("Bass"), STR16("Body"), STR16("Voice"), STR16("Presence"), STR16("Air")};
     for (int b = 0; b < Reducer::kBands; ++b)
     {
-        auto* p = new Vst::RangeParameter(bands[b], kBandParam + b, STR16("%"), 0.0, 100.0, 0.0, 0,
-                                          Vst::ParameterInfo::kCanAutomate);
-        p->setPrecision(0);
-        parameters.addParameter(p);
+        // 41 positions, 2.5 apart: the printed detents are every 10, Shift reaches the rest
+        parameters.addParameter(new BandParameter(bands[b], kBandParam + b));
     }
 
     const Vst::TChar* names[] = {STR16("Bass | Body"), STR16("Body | Voice"), STR16("Voice | Presence"), STR16("Presence | Air")};
@@ -78,6 +104,11 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     const Vst::TChar* solos[] = {STR16("Solo Bass"), STR16("Solo Body"), STR16("Solo Voice"), STR16("Solo Presence"), STR16("Solo Air")};
     for (int b = 0; b < Reducer::kBands; ++b)
         parameters.addParameter(solos[b], nullptr, 1, 0.0, Vst::ParameterInfo::kCanAutomate, kSoloParam + b);
+
+    // The lamps, fed by the processor. Read-only so a host never offers to automate them.
+    const Vst::TChar* leds[] = {STR16("Lamp Bass"), STR16("Lamp Body"), STR16("Lamp Voice"), STR16("Lamp Presence"), STR16("Lamp Air")};
+    for (int b = 0; b < Reducer::kBands; ++b)
+        parameters.addParameter(leds[b], nullptr, 0, 0.0, Vst::ParameterInfo::kIsReadOnly, kLedParam + b);
 
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
@@ -109,18 +140,21 @@ tresult WetReducerController::performEdit(Vst::ParamID tag, Vst::ParamValue valu
     if (pushing || tag < kXoverParam || tag >= kXoverParam + Reducer::kXovers)
         return EditControllerEx1::performEdit(tag, value);
 
+    // in semitones: neighbours stay at least kXoverGapNotes apart
     const int moved = static_cast<int>(tag - kXoverParam);
+    int note[Reducer::kXovers];
+    for (int i = 0; i < Reducer::kXovers; ++i)
+        note[i] = Reducer::xoverNote(getParamNormalized(kXoverParam + i));
+    const int lowest = Reducer::kXoverLowNote, highest = Reducer::kXoverLowNote + Reducer::kXoverNotes;
+    note[moved] = std::clamp(Reducer::xoverNote(value), lowest + moved * Reducer::kXoverGapNotes,
+                             highest - (Reducer::kXovers - 1 - moved) * Reducer::kXoverGapNotes);
+    for (int i = moved + 1; i < Reducer::kXovers; ++i)
+        note[i] = std::max(note[i], note[i - 1] + Reducer::kXoverGapNotes);
+    for (int i = moved - 1; i >= 0; --i)
+        note[i] = std::min(note[i], note[i + 1] - Reducer::kXoverGapNotes);
     double hz[Reducer::kXovers];
     for (int i = 0; i < Reducer::kXovers; ++i)
-        hz[i] = Reducer::xoverHz(i, getParamNormalized(kXoverParam + i));
-    hz[moved] = Reducer::xoverHz(moved, value);
-    const double room = std::pow(Reducer::kXoverGap, Reducer::kXovers - 1 - moved);
-    const double floorRoom = std::pow(Reducer::kXoverGap, moved);
-    hz[moved] = std::clamp(hz[moved], Reducer::kXoverMin[moved] * floorRoom, Reducer::kXoverMax[moved] / room);
-    for (int i = moved + 1; i < Reducer::kXovers; ++i)
-        hz[i] = std::max(hz[i], hz[i - 1] * Reducer::kXoverGap);
-    for (int i = moved - 1; i >= 0; --i)
-        hz[i] = std::min(hz[i], hz[i + 1] / Reducer::kXoverGap);
+        hz[i] = Reducer::noteHz(note[i]);
 
     const Vst::ParamValue own = Reducer::xoverNorm(moved, hz[moved]);
     setParamNormalized(tag, own);
@@ -144,8 +178,28 @@ tresult WetReducerController::performEdit(Vst::ParamID tag, Vst::ParamValue valu
 }
 
 VSTGUI::CView* WetReducerController::createCustomView(VSTGUI::UTF8StringPtr name, const VSTGUI::UIAttributes& attributes,
-                                                     const VSTGUI::IUIDescription* /*description*/, VSTGUI::VST3Editor* /*editor*/)
+                                                     const VSTGUI::IUIDescription* description, VSTGUI::VST3Editor* /*editor*/)
 {
+    if (name && std::string(name) == "BandLed")
+    {
+        VSTGUI::CPoint origin, size;
+        attributes.getPointAttribute("origin", origin);
+        attributes.getPointAttribute("size", size);
+        VSTGUI::CColor colour(255, 255, 255);
+        if (auto* c = attributes.getAttributeValue("led-color"))
+            description->getColor(c->data(), colour);
+        return new BandLed(VSTGUI::CRect(origin, size), colour);
+    }
+    if (name && std::string(name) == "BandKnob")
+    {
+        VSTGUI::CPoint origin, size;
+        attributes.getPointAttribute("origin", origin);
+        attributes.getPointAttribute("size", size);
+        auto* knob = new SteppedKnob(VSTGUI::CRect(origin, size));
+        knob->setStepCount(41);
+        knob->setCoarseStep(4);
+        return knob;
+    }
     if (name && std::string(name) == "XoverStrip")
     {
         VSTGUI::CPoint origin, size;

@@ -34,9 +34,12 @@ public:
 
 private:
     void apply(Steinberg::Vst::ParamID id, double value);
+    void sendLeds(Steinberg::Vst::ProcessData& data);
 
     ReducerEngine engine;
     ReducerEngine::Settings pending;
+    double led[Reducer::kBands] = {};
+    double sentLed[Reducer::kBands] = {};
 };
 
 } // namespace Yonie
