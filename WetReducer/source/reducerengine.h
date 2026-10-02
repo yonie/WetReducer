@@ -6,10 +6,11 @@
 // The input is split at three crossovers (fourth-order Linkwitz-Riley, so the bands sum back
 // flat). In each band a tracker finds the loudest frequency, snaps it to the nearest semitone
 // and holds it for HOLD_MS, and follows the band's level. One knob per band, 0..1:
-//   0     the band as it was
-//   noon  the band and a sine at the snapped note, half and half
+//   0     the band as it was (bypassed)
+//   noon  the tone alone, as a sine
 //   1     the tone alone, as a square wave
-// The mix runs over the whole travel; the shape goes sine -> square from kShapeStart to 1.
+// From 0 to noon the band crossfades to the sine; from noon up the sine turns into a square
+// (Ronald, 2026-10-02).
 //
 // Latency: the lowest band needs a long analysis window, so the music is delayed by half of
 // it (kLatency samples) and every band's tone is read from a window centred on the sample
@@ -33,7 +34,9 @@ constexpr int kVoices = 8;               // most tones a band can play: its loud
 constexpr int kVoicesDefault = 3;
 inline int voicesOf(double norm) { return 1 + static_cast<int>(std::lround(std::clamp(norm, 0.0, 1.0) * (kVoices - 1))); }
 inline double voicesNorm(int n) { return (std::clamp(n, 1, kVoices) - 1) / static_cast<double>(kVoices - 1); }
-constexpr double kShapeStart = 0.25;     // the square comes in over the last 75% of the travel
+// The knob law: the wet share and the sine-to-square shape at a knob position 0..1.
+inline double wetOf(double knob) { return std::clamp(knob * 2.0, 0.0, 1.0); }
+inline double shapeOf(double knob) { return std::clamp(knob * 2.0 - 1.0, 0.0, 1.0); }
 constexpr int kLatency = 8192;           // half of the largest window, fixed for every rate
 constexpr int kMaxWindow = 2 * kLatency;
 

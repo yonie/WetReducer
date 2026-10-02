@@ -41,8 +41,8 @@
 	<template name="view" class="CViewContainer" origin="0, 0" size="1100, 300" minSize="1100, 300" maxSize="1100, 300" background-color="plate" transparent="false">
 		<view class="CTextLabel" origin="24, 14" size="200, 28" title="WET REDUCER" font="title" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 40" size="240, 18" title="multiband tone reducer - prototype" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="24, 96" size="150, 16" title="0  =  original" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
-		<view class="CTextLabel" origin="24, 114" size="150, 16" title="50  =  sine blend" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="24, 96" size="150, 16" title="0  =  bypassed" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="24, 114" size="150, 16" title="50  =  sine" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 132" size="150, 16" title="100  =  square" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 166" size="120, 16" title="RESPONSE" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 222" size="120, 16" title="VOICES" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
