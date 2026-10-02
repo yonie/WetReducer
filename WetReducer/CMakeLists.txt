@@ -27,7 +27,14 @@ smtg_add_vst3plugin(WetReducer
     source/wetreducercontroller.h
     source/wetreducercontroller.cpp
     source/wetreducerentry.cpp
+    source/weteditor.h
 )
+
+if(SMTG_ENABLE_VSTGUI_SUPPORT)
+    target_sources(WetReducer PRIVATE resource/wetreducereditor.uidesc)
+    target_link_libraries(WetReducer PRIVATE vstgui_support)
+    smtg_target_add_plugin_resources(WetReducer RESOURCES "resource/wetreducereditor.uidesc")
+endif(SMTG_ENABLE_VSTGUI_SUPPORT)
 
 target_compile_features(WetReducer PRIVATE cxx_std_17)
 target_link_libraries(WetReducer PRIVATE sdk)
