@@ -11,6 +11,7 @@
 
 #include "vstgui/lib/cview.h"
 #include "vstgui/lib/cvstguitimer.h"
+#include "vstgui/lib/events.h"
 #include "public.sdk/source/vst/vsteditcontroller.h"
 #include "wetreducercids.h"
 #include "reducerengine.h"
@@ -27,11 +28,13 @@ public:
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
     VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
     VSTGUI::CMouseEventResult onMouseUp(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
+    void onMouseWheelEvent(VSTGUI::MouseWheelEvent& event) override;
 
 private:
     static constexpr int kHandles = Reducer::kBands + 1;    // BASS's low edge, four crossovers, AIR's high edge
     static Steinberg::Vst::ParamID paramOf(int handle);
     int noteOf(int handle) const;
+    void moveTo(int handle, int note);      // clamped to the neighbours, then sent to the host
     double hzAt(double x) const;
     double xAt(double hz) const;
     VSTGUI::CRect track() const;

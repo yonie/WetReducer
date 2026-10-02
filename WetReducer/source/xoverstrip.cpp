@@ -227,17 +227,44 @@ CMouseEventResult XoverStrip::onMouseMoved(CPoint& where, const CButtonState& bu
     if (dragging < 0 || !buttons.isLeftButton())
         return kMouseEventNotHandled;
     // a handle moves in semitones and stops at its neighbours, kXoverGapNotes away
+    moveTo(dragging, static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hzAt(where.x) / 440.0))));
+    return kMouseEventHandled;
+}
+
+// One notch of the wheel moves the handle nearest the pointer one semitone; up is higher.
+void XoverStrip::onMouseWheelEvent(MouseWheelEvent& event)
+{
+    const int step = event.deltaY > 0.0 ? 1 : event.deltaY < 0.0 ? -1 : 0;
+    if (step == 0)
+        return;
+    int nearest = 0;
+    double best = 1e9;
+    for (int h = 0; h < kHandles; ++h)
+    {
+        const double d = std::abs(event.mousePosition.x - xAt(Reducer::noteHz(noteOf(h))));
+        if (d < best)
+        {
+            best = d;
+            nearest = h;
+        }
+    }
+    controller->beginEdit(paramOf(nearest));
+    moveTo(nearest, noteOf(nearest) + step);
+    controller->endEdit(paramOf(nearest));
+    event.consumed = true;
+}
+
+void XoverStrip::moveTo(int handle, int note)
+{
     const int lowest = Reducer::kXoverLowNote, highest = Reducer::kXoverLowNote + Reducer::kXoverNotes;
-    int note = static_cast<int>(std::lround(69.0 + 12.0 * std::log2(hzAt(where.x) / 440.0)));
-    const int below = dragging > 0 ? noteOf(dragging - 1) + Reducer::kXoverGapNotes : lowest;
-    const int above = dragging < kHandles - 1 ? noteOf(dragging + 1) - Reducer::kXoverGapNotes : highest;
+    const int below = handle > 0 ? noteOf(handle - 1) + Reducer::kXoverGapNotes : lowest;
+    const int above = handle < kHandles - 1 ? noteOf(handle + 1) - Reducer::kXoverGapNotes : highest;
     note = std::clamp(note, below, above);
-    const auto id = paramOf(dragging);
+    const auto id = paramOf(handle);
     const auto n = Reducer::xoverNorm(0, Reducer::noteHz(note));
     controller->setParamNormalized(id, n);
     controller->performEdit(id, n);
     invalid();
-    return kMouseEventHandled;
 }
 
 CMouseEventResult XoverStrip::onMouseUp(CPoint& where, const CButtonState& buttons)
