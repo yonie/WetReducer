@@ -152,8 +152,8 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
                                                Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
     quiet->appendString(STR16("Keep"));
     quiet->appendString(STR16("Skip"));
-    quiet->getInfo().defaultNormalizedValue = 0.0;
-    quiet->setNormalized(0.0);
+    quiet->getInfo().defaultNormalizedValue = 1.0;     // Skip (Ronald, 2026-10-02)
+    quiet->setNormalized(1.0);
     parameters.addParameter(quiet);
 
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,

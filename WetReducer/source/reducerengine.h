@@ -171,7 +171,7 @@ private:
     std::array<Voice, Reducer::kVoices> voices;
     int active = Reducer::kVoicesDefault;   // how many of them may play
     bool lowestFirst = true;                 // the lowest of the band's strongest notes win
-    bool keepQuietNotes = true;              // every voice is used, however quiet its note
+    bool keepQuietNotes = false;             // notes 12 dB under the loudest are skipped
     double weightGlide = 0.001;
     int changes = 0;
     double level = 0.0, levelTarget = 0.0, levelStep = 0.0;
@@ -190,7 +190,7 @@ public:
         int response = Reducer::kResponseDefault;
         int voices = Reducer::kVoicesDefault;
         bool lowestFirst = true;
-        bool keepQuiet = true;
+        bool keepQuiet = false;
         double lowEdge = Reducer::edgeBottomHz();
         double highEdge = Reducer::edgeTopHz();
     };
