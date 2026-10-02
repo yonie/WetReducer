@@ -31,6 +31,7 @@
 		<control-tag name="kS3" tag="12"/>
 		<control-tag name="kS4" tag="13"/>
 		<control-tag name="kResp" tag="14"/>
+		<control-tag name="kVoices" tag="22"/>
 		<control-tag name="kL0" tag="15"/>
 		<control-tag name="kL1" tag="16"/>
 		<control-tag name="kL2" tag="17"/>
@@ -44,6 +45,8 @@
 		<view class="CTextLabel" origin="24, 114" size="150, 16" title="50  =  sine blend" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 132" size="150, 16" title="100  =  square" font="small" font-color="dim" text-alignment="left" transparent="true" style-no-frame="true"/>
 		<view class="CTextLabel" origin="24, 166" size="120, 16" title="RESPONSE" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
+		<view class="CTextLabel" origin="24, 222" size="120, 16" title="VOICES" font="label" font-color="ink" text-alignment="left" transparent="true" style-no-frame="true"/>
+		<view class="CControl" custom-view-name="VoiceSelect" origin="24, 242" size="110, 44" control-tag="kVoices" transparent="true"/>
 		<view class="COptionMenu" origin="24, 186" size="110, 22" control-tag="kResp" font="value" font-color="ink" back-color="track" frame-color="rule" style-round-rect="true" round-rect-radius="4" text-alignment="center"/>
 		<!-- BASS -->
 		<view class="CControl" custom-view-name="BandLed" origin="231, 14" size="28, 28" control-tag="kL0" led-color="band1" transparent="true"/>

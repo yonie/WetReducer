@@ -71,6 +71,8 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.lowEdge = Reducer::xoverHz(0, value);
     else if (id == kHighEdgeParam)
         pending.highEdge = Reducer::xoverHz(0, value);
+    else if (id == kVoicesParam)
+        pending.voices = Reducer::voicesOf(value);
 }
 
 // The lamps flash each time a band's tone moves to a new note, brighter the further its knob is
@@ -137,7 +139,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     return kResultOk;
 }
 
-// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the output filters; anything older was a four-band prototype
+// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the band edges, version 7 the voice count; anything older was a four-band prototype
 // and loads with the defaults.
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
@@ -183,6 +185,12 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
             if (s.readDouble(hz))
                 st.highEdge = std::clamp(hz, Reducer::edgeBottomHz(), Reducer::edgeTopHz());
         }
+        if (version >= 7)
+        {
+            int32 n = Reducer::kVoicesDefault;
+            if (s.readInt32(n))
+                st.voices = std::clamp(static_cast<int>(n), 1, Reducer::kVoices);
+        }
     }
     pending = st;
     engine.setSettings(st);
@@ -194,7 +202,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(6);
+    s.writeInt32(7);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)
@@ -204,6 +212,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     s.writeInt32(pending.response);
     s.writeDouble(pending.lowEdge);
     s.writeDouble(pending.highEdge);
+    s.writeInt32(pending.voices);
     return kResultOk;
 }
 

@@ -29,7 +29,10 @@ namespace Yonie {
 namespace Reducer {
 constexpr int kBands = 5;
 constexpr int kXovers = kBands - 1;
-constexpr int kVoices = 3;               // tones per band: the loudest notes in it, up to three
+constexpr int kVoices = 8;               // most tones a band can play: its loudest notes
+constexpr int kVoicesDefault = 3;
+inline int voicesOf(double norm) { return 1 + static_cast<int>(std::lround(std::clamp(norm, 0.0, 1.0) * (kVoices - 1))); }
+inline double voicesNorm(int n) { return (std::clamp(n, 1, kVoices) - 1) / static_cast<double>(kVoices - 1); }
 constexpr double kShapeStart = 0.25;     // the square comes in over the last 75% of the travel
 constexpr int kLatency = 8192;           // half of the largest window, fixed for every rate
 constexpr int kMaxWindow = 2 * kLatency;
@@ -62,7 +65,7 @@ constexpr double kXoverDefaultHz[kXovers] = {123.4708, 493.8833, 2093.0045, 6271
 
 // The crossovers move in semitones (Ronald: "the sliders should map to notes"), from B0 to B9.
 constexpr int kXoverLowNote = 23;            // B0, 30.9 Hz
-constexpr int kXoverNotes = 100;             // up to B9, 15.8 kHz
+constexpr int kXoverNotes = 108;             // up to B9, 15.8 kHz
 constexpr int kXoverGapNotes = 4;            // neighbouring splits at least a major third apart
 
 inline double noteHz(int midi) { return 440.0 * std::pow(2.0, (midi - 69) / 12.0); }
@@ -133,6 +136,7 @@ public:
     void prepare(double fs, double lowEdge, double highEdge);
     void setEdges(double lowEdge, double highEdge);
     void setResponse(int index);
+    void setVoices(int n) { active = std::clamp(n, 1, Reducer::kVoices); }
     void reset();
     // Feed one undelayed mono band sample; returns the tone for the sample now being played
     // (kLatency samples ago), at the given shape (0 sine, 1 square).
@@ -161,6 +165,7 @@ private:
         double phase = 0.0;
     };
     std::array<Voice, Reducer::kVoices> voices;
+    int active = Reducer::kVoicesDefault;   // how many of them may play
     double weightGlide = 0.001;
     int changes = 0;
     double level = 0.0, levelTarget = 0.0, levelStep = 0.0;
@@ -177,6 +182,7 @@ public:
                                                     Reducer::kXoverDefaultHz[2], Reducer::kXoverDefaultHz[3]}};
         std::array<bool, Reducer::kBands> solo{};
         int response = Reducer::kResponseDefault;
+        int voices = Reducer::kVoicesDefault;
         double lowEdge = Reducer::edgeBottomHz();
         double highEdge = Reducer::edgeTopHz();
     };

@@ -207,10 +207,10 @@ void BandTone::analyse()
         else
             same->mag = std::max(same->mag, m);
     }
-    // The loudest kVoices notes, ignoring any more than 12 dB under the loudest.
+    // The loudest `active` notes, ignoring any more than 12 dB under the loudest.
     std::sort(peaks.begin(), peaks.end(), [](const Peak& x, const Peak& y) { return x.mag > y.mag; });
-    if (peaks.size() > static_cast<size_t>(Reducer::kVoices))
-        peaks.resize(Reducer::kVoices);
+    if (peaks.size() > static_cast<size_t>(active))
+        peaks.resize(active);
     if (!peaks.empty())
     {
         const double floorMag = peaks.front().mag * 0.25;
@@ -228,7 +228,7 @@ void BandTone::analyse()
     {
         int best = 0;
         int bestCost = 1 << 30;
-        for (int v = 0; v < Reducer::kVoices; ++v)
+        for (int v = 0; v < active; ++v)
         {
             if (used[v])
                 continue;
@@ -389,6 +389,7 @@ void ReducerEngine::applyXovers(bool resetTrackers)
         else
             tones[b].setEdges(edges[b], edges[b + 1]);
         tones[b].setResponse(current.response);
+        tones[b].setVoices(current.voices);
     }
 }
 
@@ -402,6 +403,8 @@ void ReducerEngine::setSettings(const Settings& s)
     else if (responseChanged)
         for (auto& t : tones)
             t.setResponse(current.response);
+    for (auto& t : tones)
+        t.setVoices(current.voices);
 }
 
 void ReducerEngine::process(const float* inL, const float* inR, float* outL, float* outR, int n)

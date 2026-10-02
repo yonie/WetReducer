@@ -34,6 +34,8 @@ smtg_add_vst3plugin(WetReducer
     source/steppedknob.cpp
     source/bandled.h
     source/bandled.cpp
+    source/voiceselect.h
+    source/voiceselect.cpp
 )
 
 if(SMTG_ENABLE_VSTGUI_SUPPORT)

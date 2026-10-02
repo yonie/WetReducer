@@ -28,8 +28,9 @@ enum WetReducerParams : Steinberg::Vst::ParamID
     kLedParam      = 15,    // 15..19: read-only, each band's lamp, from the processor to the panel
     kLowEdgeParam  = 20,    // where BASS starts, B0..B9; below it the music passes as it is. Off at the bottom
     kHighEdgeParam = 21,    // where AIR ends, B0..B9; above it the music passes as it is. Off at the top
+    kVoicesParam   = 22,    // tones per band, 1..8; the VOICES display with its up and down buttons
 
-    kParamCount    = 22
+    kParamCount    = 23
 };
 
 //------------------------------------------------------------------------

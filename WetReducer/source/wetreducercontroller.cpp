@@ -9,6 +9,7 @@
 #include "xoverstrip.h"
 #include "steppedknob.h"
 #include "bandled.h"
+#include "voiceselect.h"
 #include "vstgui/uidescription/uiattributes.h"
 
 #include "base/source/fstreamer.h"
@@ -134,6 +135,11 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     parameters.addParameter(new FilterParameter(STR16("Bass from"), kLowEdgeParam, false));
     parameters.addParameter(new FilterParameter(STR16("Air up to"), kHighEdgeParam, true));
 
+    // VOICES: tones per band, 1..8, stepped by the display's up and down buttons
+    parameters.addParameter(STR16("Voices"), nullptr, Reducer::kVoices - 1,
+                            Reducer::voicesNorm(Reducer::kVoicesDefault), Vst::ParameterInfo::kCanAutomate,
+                            kVoicesParam);
+
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
     response->appendString(STR16("Slow"));
@@ -225,6 +231,13 @@ VSTGUI::CView* WetReducerController::createCustomView(VSTGUI::UTF8StringPtr name
         knob->setCoarseStep(4);
         return knob;
     }
+    if (name && std::string(name) == "VoiceSelect")
+    {
+        VSTGUI::CPoint origin, size;
+        attributes.getPointAttribute("origin", origin);
+        attributes.getPointAttribute("size", size);
+        return new VoiceSelect(VSTGUI::CRect(origin, size));
+    }
     if (name && std::string(name) == "XoverStrip")
     {
         VSTGUI::CPoint origin, size;
@@ -277,6 +290,12 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
             setParamNormalized(kLowEdgeParam, Reducer::xoverNorm(0, hz));
         if (s.readDouble(hz))
             setParamNormalized(kHighEdgeParam, Reducer::xoverNorm(0, hz));
+    }
+    if (version >= 7)
+    {
+        int32 n = Reducer::kVoicesDefault;
+        if (s.readInt32(n))
+            setParamNormalized(kVoicesParam, Reducer::voicesNorm(n));
     }
     return kResultOk;
 }
