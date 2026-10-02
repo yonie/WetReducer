@@ -82,7 +82,9 @@ inline double xoverHz(int /*i*/, double norm) { return noteHz(xoverNote(norm)); 
 // and the bands reach the bottom and the top. Outside an edge the music passes as it is, so
 // BASS does not have to follow everything from 30 Hz up.
 inline double edgeBottomHz() { return noteHz(kXoverLowNote); }
-constexpr int kLowEdgeDefaultNote = 28;       // E1, 41.2 Hz: where BASS starts by default (Ronald, 2026-10-02)
+// BASS starts one note under a 4-string's low E (Ronald, 2026-10-02): the tracker searches from
+// the edge up, so a slightly flat E1 would fall outside an edge set exactly on it.
+constexpr int kLowEdgeDefaultNote = 27;       // D#1, 38.9 Hz
 inline double edgeTopHz() { return noteHz(kXoverLowNote + kXoverNotes); }
 inline bool lowEdgeOn(double hz) { return hz > edgeBottomHz() * 1.01; }
 inline bool highEdgeOn(double hz) { return hz < edgeTopHz() * 0.99; }
