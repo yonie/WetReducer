@@ -138,7 +138,7 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     return kResultOk;
 }
 
-// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the band edges, version 7 the voice count, version 8 two switches that are fixed now (9 drops them; they were last, so 8 still reads); anything older was a four-band prototype
+// Prototype state. Version 4 is the five-band layout, version 5 adds the 500 ms response as response 0, version 6 the band edges, version 7 the voice count, version 8 two switches that are fixed now (9 drops them; they were last, so 8 still reads), version 10 two responses instead of four; anything older was a four-band prototype
 // and loads with the defaults.
 tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
 {
@@ -174,6 +174,8 @@ tresult PLUGIN_API WetReducerProcessor::setState(IBStream* state)
         {
             if (version == 4)
                 ++r;               // version 4 had no 500 ms response in front
+            if (version < 10)
+                r = Reducer::responseFromFour(r);
             st.response = std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1);
         }
         if (version >= 6)
@@ -201,7 +203,7 @@ tresult PLUGIN_API WetReducerProcessor::getState(IBStream* state)
     if (!state)
         return kResultFalse;
     IBStreamer s(state, kLittleEndian);
-    s.writeInt32(9);
+    s.writeInt32(10);
     for (double a : pending.amount)
         s.writeDouble(a);
     for (double hz : pending.xover)

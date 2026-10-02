@@ -144,9 +144,7 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     auto* response = new Vst::StringListParameter(STR16("Response"), kResponseParam, nullptr,
                                                   Vst::ParameterInfo::kCanAutomate | Vst::ParameterInfo::kIsList);
     response->appendString(STR16("Slow"));
-    response->appendString(STR16("Medium"));
     response->appendString(STR16("Fast"));
-    response->appendString(STR16("Very fast"));
     response->getInfo().defaultNormalizedValue = Reducer::responseNorm(Reducer::kResponseDefault);
     response->setNormalized(Reducer::responseNorm(Reducer::kResponseDefault));
     parameters.addParameter(response);
@@ -282,6 +280,8 @@ tresult PLUGIN_API WetReducerController::setComponentState(IBStream* state)
     {
         if (version == 4)
             ++r;                   // version 4 had no 500 ms response in front
+        if (version < 10)
+            r = Reducer::responseFromFour(r);
         setParamNormalized(kResponseParam, Reducer::responseNorm(std::clamp(static_cast<int>(r), 0, Reducer::kResponses - 1)));
     }
     if (version >= 6)
