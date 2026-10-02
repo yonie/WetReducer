@@ -64,7 +64,8 @@ inline int responseIndex(double norm)
 constexpr double kXoverMin[kXovers] = {30.0, 30.0, 30.0, 30.0};
 constexpr double kXoverMax[kXovers] = {16000.0, 16000.0, 16000.0, 16000.0};
 constexpr double kXoverGap = 1.25;          // a band is at least a major third wide
-constexpr double kXoverDefaultHz[kXovers] = {123.4708, 493.8833, 2093.0045, 6271.9270};    // B2 B4 C7 G8
+// BASS ends at A2 so a 4-string bass, open G included, stays in it (Ronald, 2026-10-02)
+constexpr double kXoverDefaultHz[kXovers] = {110.0, 493.8833, 2093.0045, 6271.9270};    // A2 B4 C7 G8
 
 // The crossovers move in semitones (Ronald: "the sliders should map to notes"), from B0 to B9.
 constexpr int kXoverLowNote = 23;            // B0, 30.9 Hz
