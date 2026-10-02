@@ -28,7 +28,7 @@ inline bool isFine(const Modifiers& modifiers)
 
 //------------------------------------------------------------------------
 SteppedKnob::SteppedKnob(const CRect& size)
-: CKnob(size, nullptr, -1, nullptr, nullptr)
+: CAnimKnob(size, nullptr, -1, nullptr)
 {
     setStepCount(stepCount);
 }
@@ -41,6 +41,10 @@ void SteppedKnob::setStepCount(int count)
     // One wheel notch = one detent. VSTGUI multiplies deltaY by this.
     setWheelInc(1.0f / static_cast<float>(stepCount - 1));
 
+    // CAnimKnob picks its frame from the normalised value across the strip.
+    // The strip has one frame per FINE step, so frame == step and a Shift move
+    // turns the pointer by exactly what it changed.
+    setInverseBitmap(false);
 }
 
 //------------------------------------------------------------------------
@@ -73,7 +77,7 @@ void SteppedKnob::setValue(float val)
     const float range = hi - lo;
     if (range <= 0.f)
     {
-        CKnob::setValue(val);
+        CAnimKnob::setValue(val);
         return;
     }
     // Always snap to the FINE grid here, never the coarse one. This is the
@@ -82,7 +86,7 @@ void SteppedKnob::setValue(float val)
     // would throw away a fine setting the moment anything touched the knob.
     // The coarse feel belongs to the input handlers below, not to the value.
     const float norm = snap((val - lo) / range, true);
-    CKnob::setValue(lo + norm * range);
+    CAnimKnob::setValue(lo + norm * range);
 }
 
 //------------------------------------------------------------------------
@@ -160,7 +164,7 @@ CMouseEventResult SteppedKnob::onMouseMoved(CPoint& where, const CButtonState& b
     // CKnobBase::onMouseMoved writes the member `value` DIRECTLY rather than
     // going through setValue, so the snapping above never sees a drag. Let the
     // base class do its maths, then snap what it left behind.
-    const CMouseEventResult result = CKnob::onMouseMoved(where, buttons);
+    const CMouseEventResult result = CAnimKnob::onMouseMoved(where, buttons);
     if (result != kMouseEventHandled)
         return result;
 
@@ -176,7 +180,7 @@ CMouseEventResult SteppedKnob::onMouseMoved(CPoint& where, const CButtonState& b
         // The base class already reported the unsnapped value, so report the
         // snapped one too: the host must not be left holding a value the knob
         // is not showing.
-        CKnob::setValue(snapped);
+        CAnimKnob::setValue(snapped);
         if (isDirty())
         {
             invalid();

@@ -34,14 +34,18 @@ smtg_add_vst3plugin(WetReducer
     source/steppedknob.cpp
     source/bandled.h
     source/bandled.cpp
-    source/voiceselect.h
-    source/voiceselect.cpp
+    source/voicearrow.h
+    source/voicearrow.cpp
+    source/customviewcreator.h
+    source/customviewcreator.cpp
 )
 
 if(SMTG_ENABLE_VSTGUI_SUPPORT)
     target_sources(WetReducer PRIVATE resource/wetreducereditor.uidesc)
     target_link_libraries(WetReducer PRIVATE vstgui_support)
-    smtg_target_add_plugin_resources(WetReducer RESOURCES "resource/wetreducereditor.uidesc")
+    # the rendered panel: backplate, filmstrips and cap sprites (tools/make-assets-wetreducer.py)
+    file(GLOB WETREDUCER_PNGS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CONFIGURE_DEPENDS resource/*.png)
+    smtg_target_add_plugin_resources(WetReducer RESOURCES "resource/wetreducereditor.uidesc" ${WETREDUCER_PNGS})
 endif(SMTG_ENABLE_VSTGUI_SUPPORT)
 
 target_compile_features(WetReducer PRIVATE cxx_std_17)

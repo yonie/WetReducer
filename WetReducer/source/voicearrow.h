@@ -1,32 +1,32 @@
 //------------------------------------------------------------------------
 // Copyright(c) 2026 Yonie.
 //------------------------------------------------------------------------
-// VOICES: an 80s seven-segment LCD showing how many tones each band plays, with an up and a
-// down arrow button beside it (Ronald, 2026-10-02). 1..8, default 3.
+// The VOICES up and down tip buttons. Each is bound to the voice count and steps it by one per
+// click; the rendered cap shows pressed while the mouse is down. The display beside them is a
+// CMovieBitmap on the same parameter.
 //------------------------------------------------------------------------
 
 #pragma once
 
-#include "vstgui/lib/ccolor.h"
+#include "vstgui/lib/cbitmap.h"
 #include "vstgui/lib/controls/ccontrol.h"
 
 namespace Yonie {
 
-class VoiceSelect : public VSTGUI::CControl
+class VoiceArrow : public VSTGUI::CControl
 {
 public:
-    explicit VoiceSelect(const VSTGUI::CRect& size);
+    VoiceArrow(const VSTGUI::CRect& size, VSTGUI::CBitmap* frames, int direction);
 
     void draw(VSTGUI::CDrawContext* context) override;
     VSTGUI::CMouseEventResult onMouseDown(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
     VSTGUI::CMouseEventResult onMouseUp(VSTGUI::CPoint& where, const VSTGUI::CButtonState& buttons) override;
-    CLASS_METHODS(VoiceSelect, CControl)
+    CLASS_METHODS(VoiceArrow, CControl)
 
 private:
-    VSTGUI::CRect lcd() const;
-    VSTGUI::CRect upButton() const;
-    VSTGUI::CRect downButton() const;
-    int pressed = 0;                // +1 up, -1 down, 0 none
+    VSTGUI::SharedPointer<VSTGUI::CBitmap> frames;    // two frames stacked vertically: up, pressed
+    int direction;                                     // +1 up, -1 down
+    bool pressed = false;
 };
 
 } // namespace Yonie

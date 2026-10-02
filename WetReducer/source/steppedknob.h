@@ -10,7 +10,7 @@
 namespace Yonie {
 
 //------------------------------------------------------------------------
-// SteppedKnob - a knob that only rests on discrete positions.
+// SteppedKnob - a filmstrip knob that only rests on discrete positions.
 //
 // Every WetEQ control is a stepped encoder: coarse on purpose, so it forces a
 // decision instead of inviting a 0.5 dB fiddle. That means:
@@ -33,7 +33,7 @@ namespace Yonie {
 // coarseStep must divide (stepCount - 1) exactly, or the coarse detents drift
 // off the fine grid and the top of the knob stops being reachable coarsely.
 //------------------------------------------------------------------------
-class SteppedKnob : public VSTGUI::CKnob
+class SteppedKnob : public VSTGUI::CAnimKnob
 {
 public:
     SteppedKnob(const VSTGUI::CRect& size);
@@ -53,7 +53,7 @@ public:
     VSTGUI::CMouseEventResult onMouseMoved(VSTGUI::CPoint& where,
                                            const VSTGUI::CButtonState& buttons) override;
 
-    CLASS_METHODS(SteppedKnob, VSTGUI::CKnob)
+    CLASS_METHODS(SteppedKnob, VSTGUI::CAnimKnob)
 
 private:
     // Move by whole detents and report the change to the host.

@@ -9,7 +9,8 @@
 #include "xoverstrip.h"
 #include "steppedknob.h"
 #include "bandled.h"
-#include "voiceselect.h"
+#include "voicearrow.h"
+#include "customviewcreator.h"
 #include "vstgui/uidescription/uiattributes.h"
 
 #include "base/source/fstreamer.h"
@@ -110,6 +111,7 @@ public:
 tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
 {
     tresult result = EditControllerEx1::initialize(context);
+    registerCustomViews();
     if (result != kResultOk)
         return result;
 
@@ -210,39 +212,63 @@ tresult WetReducerController::performEdit(Vst::ParamID tag, Vst::ParamValue valu
 VSTGUI::CView* WetReducerController::createCustomView(VSTGUI::UTF8StringPtr name, const VSTGUI::UIAttributes& attributes,
                                                      const VSTGUI::IUIDescription* description, VSTGUI::VST3Editor* /*editor*/)
 {
-    if (name && std::string(name) == "BandLed")
+    if (!name)
+        return nullptr;
+    const std::string n(name);
+    VSTGUI::CPoint origin, size;
+    attributes.getPointAttribute("origin", origin);
+    attributes.getPointAttribute("size", size);
+    const VSTGUI::CRect rect(origin, size);
+    auto bitmap = [&](const char* attr) -> VSTGUI::CBitmap* {
+        auto* v = attributes.getAttributeValue(attr);
+        return v ? description->getBitmap(v->data()) : nullptr;
+    };
+    auto number = [&](const char* attr, double fallback) {
+        double d = fallback;
+        attributes.getDoubleAttribute(attr, d);
+        return d;
+    };
+
+    if (n == "BandLed")
+        return new BandLed(rect, bitmap("bitmap"));
+    if (n == "VoiceArrow")
+        return new VoiceArrow(rect, bitmap("bitmap"), static_cast<int>(number("direction", 1.0)));
+    if (n == "XoverStrip")
     {
-        VSTGUI::CPoint origin, size;
-        attributes.getPointAttribute("origin", origin);
-        attributes.getPointAttribute("size", size);
-        VSTGUI::CColor colour(255, 255, 255);
-        if (auto* c = attributes.getAttributeValue("led-color"))
-            description->getColor(c->data(), colour);
-        return new BandLed(VSTGUI::CRect(origin, size), colour);
-    }
-    if (name && std::string(name) == "BandKnob")
-    {
-        VSTGUI::CPoint origin, size;
-        attributes.getPointAttribute("origin", origin);
-        attributes.getPointAttribute("size", size);
-        auto* knob = new SteppedKnob(VSTGUI::CRect(origin, size));
-        knob->setStepCount(41);
-        knob->setCoarseStep(4);
-        return knob;
-    }
-    if (name && std::string(name) == "VoiceSelect")
-    {
-        VSTGUI::CPoint origin, size;
-        attributes.getPointAttribute("origin", origin);
-        attributes.getPointAttribute("size", size);
-        return new VoiceSelect(VSTGUI::CRect(origin, size));
-    }
-    if (name && std::string(name) == "XoverStrip")
-    {
-        VSTGUI::CPoint origin, size;
-        attributes.getPointAttribute("origin", origin);
-        attributes.getPointAttribute("size", size);
-        return new XoverStrip(VSTGUI::CRect(origin, size), this);
+        // All geometry measured off the render, written into the .uidesc by
+        // tools/sync-reducer-uidesc.py from the asset script's layout.json.
+        StripGeometry g;
+        g.trackX0 = number("track-x0", rect.left);
+        g.trackX1 = number("track-x1", rect.right);
+        g.lineY = number("line-y", rect.bottom - 4);
+        g.lineH = number("line-h", 6);
+        g.capY = number("cap-y", rect.getCenter().y);
+        if (auto* v = attributes.getAttributeValue("band-colors"))
+        {
+            std::string list = *v;
+            for (int b = 0, start = 0; b < Reducer::kBands; ++b)
+            {
+                const auto comma = list.find(',', start);
+                const std::string item = list.substr(start, comma == std::string::npos ? std::string::npos : comma - start);
+                unsigned r = 0, gr = 0, bl = 0;
+                if (std::sscanf(item.c_str(), "#%02x%02x%02x", &r, &gr, &bl) == 3)
+                    g.band[b] = VSTGUI::CColor(static_cast<uint8_t>(r), static_cast<uint8_t>(gr), static_cast<uint8_t>(bl));
+                if (comma == std::string::npos)
+                    break;
+                start = static_cast<int>(comma) + 1;
+            }
+        }
+        for (int h = 0; h <= Reducer::kBands; ++h)
+        {
+            char key[32];
+            std::snprintf(key, sizeof(key), "cap-%d", h);
+            g.cap[h] = bitmap(key);
+            std::snprintf(key, sizeof(key), "cap-%d-anchor", h);
+            VSTGUI::CPoint a;
+            if (attributes.getPointAttribute(key, a))
+                g.anchor[h] = a;
+        }
+        return new XoverStrip(rect, this, g);
     }
     return nullptr;
 }
