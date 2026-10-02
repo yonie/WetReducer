@@ -41,6 +41,7 @@ private:
     double led[Reducer::kBands] = {};
     double sentLed[Reducer::kBands] = {};
     int seenChanges[Reducer::kBands] = {};
+    int blinkLeft[Reducer::kBands] = {-1 << 20, -1 << 20, -1 << 20, -1 << 20, -1 << 20};
 };
 
 } // namespace Yonie

@@ -79,31 +79,29 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
         pending.keepQuiet = value < 0.5;
 }
 
-// The lamps flash each time a band's tone moves to a new note, brighter the further its knob is
-// turned, and fade in about a tenth of a second. While the band has music but holds its note,
-// the lamp keeps a faint glow. A band whose knob is at 0, or that another band's solo
-// silences, stays dark.
+// The lamps blink: on for 60 ms each time a band's tone moves to a new note, then off - no
+// fade, no glow (Ronald: "why does it not just blink whenever it picks a new note"). A blink
+// is followed by at least 40 ms dark, so notes arriving faster still read as blinks. Brighter
+// the further the band's knob is turned; dark at 0 or while another band's solo silences it.
 void WetReducerProcessor::sendLeds(Vst::ProcessData& data)
 {
     const auto& st = engine.settings();
     bool anySolo = false;
     for (bool on : st.solo)
         anySolo = anySolo || on;
-    const double fall = std::exp(-data.numSamples / (0.1 * std::max(1.0, processSetup.sampleRate)));
+    const double fs = std::max(1.0, processSetup.sampleRate);
+    const int onSamples = static_cast<int>(0.060 * fs), offSamples = static_cast<int>(0.040 * fs);
     for (int b = 0; b < Reducer::kBands; ++b)
     {
-        const double db = 20.0 * std::log10(engine.bandLevel(b) + 1e-9);
-        const double caught = std::clamp((db + 60.0) / 30.0, 0.0, 1.0);
-        // dark while the band's knob is at 0 or another band's solo silences it
         const double weight = (anySolo && !st.solo[b]) ? 0.0 : st.amount[b];
         const int changes = engine.bandNoteChanges(b);
         const bool newNote = changes != seenChanges[b];
         seenChanges[b] = changes;
-        double lit = led[b] * fall;
-        if (newNote && caught > 0.0)
-            lit = weight;
-        lit = std::max(lit, 0.12 * caught * weight);
-        led[b] = lit;
+        const bool heard = engine.bandLevel(b) > 0.001;          // about -60 dBFS
+        blinkLeft[b] = std::max(blinkLeft[b] - data.numSamples, -offSamples - 1);
+        if (newNote && heard && blinkLeft[b] <= -offSamples)
+            blinkLeft[b] = onSamples;
+        led[b] = blinkLeft[b] > 0 ? weight : 0.0;
         if (data.outputParameterChanges && std::abs(led[b] - sentLed[b]) > 0.004)
         {
             int32 index = 0;
