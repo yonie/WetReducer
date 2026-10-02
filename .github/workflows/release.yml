@@ -1,0 +1,284 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # A manual run builds, signs and notarises the zip and keeps it as an
+  # artifact. Only a tag publishes a release.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone VST3 SDK
+        run: git clone --recursive https://github.com/steinbergmedia/vst3sdk.git
+
+      - name: Build
+        run: ./build.bat
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build
+          path: WetReducer/build/VST3/Release/WetReducer.vst3/
+          retention-days: 1
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone VST3 SDK
+        run: git clone --recursive https://github.com/steinbergmedia/vst3sdk.git
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake gcc g++ libstdc++6 libx11-xcb-dev libxcb-util-dev \
+            libxcb-cursor-dev libxcb-xkb-dev libxkbcommon-dev libxkbcommon-x11-dev \
+            libfontconfig1-dev libcairo2-dev libgtkmm-3.0-dev libsqlite3-dev \
+            libxcb-keysyms1-dev
+
+      - name: Build
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-build
+          path: WetReducer/build/VST3/Release/WetReducer.vst3/
+          retention-days: 1
+
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Clone VST3 SDK
+        run: git clone --recursive https://github.com/steinbergmedia/vst3sdk.git
+
+      - name: Build for arm64
+        run: |
+          chmod +x build.sh
+          mkdir -p build_arm64
+          cd build_arm64
+          cmake ../WetReducer -GXcode -DCMAKE_BUILD_TYPE=Release -DSMTG_CREATE_PLUGIN_LINK=0
+          xcodebuild -configuration Release -arch arm64 ONLY_ACTIVE_ARCH=NO -jobs $(sysctl -n hw.ncpu)
+          cd ..
+          
+      - name: Build for x86_64
+        run: |
+          mkdir -p build_x64
+          cd build_x64
+          cmake ../WetReducer -GXcode -DCMAKE_BUILD_TYPE=Release -DSMTG_CREATE_PLUGIN_LINK=0
+          xcodebuild -configuration Release -arch x86_64 ONLY_ACTIVE_ARCH=NO -jobs $(sysctl -n hw.ncpu)
+          cd ..
+
+      - name: Create universal binary
+        run: |
+          echo "Finding arm64 binary..."
+          ARM64_PATH=$(find build_arm64 -name "WetReducer" -path "*/MacOS/*" -type f | head -1)
+          echo "Finding x86_64 binary..."
+          X64_PATH=$(find build_x64 -name "WetReducer" -path "*/MacOS/*" -type f | head -1)
+          
+          echo "ARM64 binary: $ARM64_PATH"
+          echo "x86_64 binary: $X64_PATH"
+          
+          if [ -z "$ARM64_PATH" ] || [ -z "$X64_PATH" ]; then
+            echo "ERROR: Could not find binaries"
+            exit 1
+          fi
+          
+          # Create output directory
+          mkdir -p WetReducer/build/Release/WetReducer.vst3/Contents/MacOS
+          mkdir -p WetReducer/build/Release/WetReducer.vst3/Contents/Resources
+          
+          # Create universal binary
+          lipo -create "$ARM64_PATH" "$X64_PATH" -output WetReducer/build/Release/WetReducer.vst3/Contents/MacOS/WetReducer
+          
+          # Copy resources and plist from arm64 build
+          VST3_PATH=$(dirname "$ARM64_PATH" | xargs dirname | xargs dirname)
+          cp -r "$VST3_PATH/Contents/Resources/"* WetReducer/build/Release/WetReducer.vst3/Contents/Resources/ || true
+          cp "$VST3_PATH/Contents/Info.plist" WetReducer/build/Release/WetReducer.vst3/Contents/ || true
+          cp "$VST3_PATH/Contents/PkgInfo" WetReducer/build/Release/WetReducer.vst3/Contents/ || true
+
+      - name: Verify macOS code signing
+        run: |
+          echo "Verifying code signature..."
+          codesign --force --deep --sign - WetReducer/build/Release/WetReducer.vst3
+          codesign -v WetReducer/build/Release/WetReducer.vst3
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-build
+          path: WetReducer/build/Release/WetReducer.vst3/
+          retention-days: 1
+
+  build-au:
+    uses: ./.github/workflows/au.yml
+
+  merge-and-release:
+    needs: [build-windows, build-linux, build-macos, build-au]
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-build
+          path: artifacts/windows
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-build
+          path: artifacts/linux
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-build
+          path: artifacts/macos
+
+      - name: Download AU artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: au-build
+          path: artifacts/au
+
+      - name: Debug artifact structure
+        run: |
+          echo "Windows artifact structure:"
+          find artifacts/windows -type f | head -20
+          echo ""
+          echo "Linux artifact structure:"
+          find artifacts/linux -type f | head -20
+          echo ""
+          echo "macOS universal binary artifact structure:"
+          find artifacts/macos -type f | head -20
+
+      - name: Merge into universal VST3
+        run: |
+          chmod +x scripts/merge-vst3.sh
+          ./scripts/merge-vst3.sh
+
+      - name: Unpack Audio Unit
+        run: ditto -x -k artifacts/au/WetReducer-AU.zip build
+
+      - name: Sign and notarise for macOS
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          NOTARY_KEY_P8: ${{ secrets.NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.NOTARY_ISSUER_ID }}
+        run: |
+          chmod +x scripts/sign-macos.sh
+          ./scripts/sign-macos.sh build/WetReducer.vst3 build/WetReducer.component
+
+      - name: Create ZIP archive
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            ZIP=WetReducer-${{ github.ref_name }}.zip
+          else
+            ZIP=WetReducer-test-${GITHUB_SHA::7}.zip
+          fi
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+          cd build
+          cp ../packaging/README.txt .
+          zip -ry ../$ZIP WetReducer.vst3 WetReducer.component README.txt
+          ls -la ../$ZIP
+
+      # Plays the user: unpack the zip as downloaded, flag it the way a browser
+      # or chat app does, and ask Gatekeeper whether it would open.
+      - name: Gatekeeper check on the zip as downloaded
+        run: |
+          rm -rf gk && mkdir gk && cd gk
+          ditto -x -k "../$ZIP" .
+          QUARANTINE="0083;$(printf '%x' $(date +%s));Safari;$(uuidgen)"
+          xattr -w -r com.apple.quarantine "$QUARANTINE" WetReducer.vst3 WetReducer.component
+          xattr -p com.apple.quarantine WetReducer.component
+          for B in WetReducer.vst3 WetReducer.component; do
+            spctl --assess --type open --context context:primary-signature --verbose=2 "$B"
+          done
+          syspolicy_check distribution WetReducer.vst3
+          # On the component syspolicy_check stops at "Internal Xprotect Error",
+          # a fault in the tool rather than a verdict (seen 2026-09-25 with a
+          # notarised component that passes Gatekeeper). The auval load below,
+          # of a quarantined copy, is the test that counts.
+          syspolicy_check distribution WetReducer.component || true
+          rm -rf ~/Library/Audio/Plug-Ins/Components/WetReducer.component
+          mkdir -p ~/Library/Audio/Plug-Ins/Components
+          ditto WetReducer.component ~/Library/Audio/Plug-Ins/Components/WetReducer.component
+          xattr -p com.apple.quarantine ~/Library/Audio/Plug-Ins/Components/WetReducer.component
+          killall -9 AudioComponentRegistrar || true
+          auval -v aufx Wred WetV
+
+      - name: Upload test zip
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-test-zip
+          path: ${{ env.ZIP }}
+          retention-days: 7
+
+      - name: Create Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ env.ZIP }}
+          generate_release_notes: true
+          draft: false
+          # NOTE: this body is hardcoded and does NOT update itself. Rewrite the
+          # description before every tag - it has lagged a release behind before.
+          # The Installation block below is REQUIRED and stays: people land on the
+          # release page from an aggregator with no idea what to do with a .vst3.
+          body: |
+            **WetReducer 1.0.0**
+
+            Product page: https://wetvst.com/wetreducer/
+
+            A creative plug-in: it splits a mix or recording into five bands - BASS, BODY, VOICE, PRESENCE and AIR - and rebuilds each one from its own loudest notes, as sine or square waves snapped to the nearest semitone.
+
+            - One stepped knob per band: 0 the original, noon all sine, full all square. Hold Shift for four times finer.
+            - One frequency strip with six handles on a semitone grid: where BASS starts, the four splits, where AIR ends.
+            - VOICES: 1 to 8 notes per band, on a red seven-segment display.
+            - RESPONSE: a flick switch, slow or fast note following.
+            - SOLO and a note LED per band; the LED blinks on every new note.
+            - Mono and stereo, in and out. WetReducer listens ahead to find each note, so it reports 8192 samples of latency for your DAW to compensate.
+
+            ### Resizing the panel
+
+            Right-click anywhere on the panel and pick **UI Zoom** - 75%, 100% or 125%.
+
+            ### Installation
+
+            First, download the ZIP (see Assets below).
+
+            **Windows**: Extract to `C:\Program Files\Common Files\VST3\`
+
+            **Linux**: Extract to `~/.vst3/` or `/usr/lib/vst3/`
+
+            **macOS**: Copy `WetReducer.vst3` to `~/Library/Audio/Plug-Ins/VST3/`, and `WetReducer.component` (Logic, GarageBand) to `~/Library/Audio/Plug-Ins/Components/`
+
+            Restart your DAW and rescan for plugins.
+
+            See the [README](https://github.com/yonie/WetReducer/blob/main/README.md) for full details.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
