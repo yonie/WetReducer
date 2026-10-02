@@ -126,13 +126,7 @@ void XoverStrip::draw(CDrawContext* ctx)
         edge[Reducer::kBands] = kHi;
     auto font = makeOwned<CFontDesc>("Arial", 11, kBoldFace);
     ctx->setFont(font);
-    // seven segments: the outer two are bypass, the music there passes as it is
-    ctx->setFontColor(kDim);
-    const CRect lowPass(t.left, t.top, xAt(edge[0]), t.bottom), highPass(xAt(edge[Reducer::kBands]), t.top, t.right, t.bottom);
-    if (lowPass.getWidth() > 60)
-        ctx->drawString("BYPASS", lowPass, kCenterText);
-    if (highPass.getWidth() > 60)
-        ctx->drawString("BYPASS", highPass, kCenterText);
+    // seven segments: the outer two pass the music as it is and stay plain
     for (int b = 0; b < Reducer::kBands; ++b)
     {
         CRect band(xAt(edge[b]), t.top, xAt(edge[b + 1]), t.bottom);
