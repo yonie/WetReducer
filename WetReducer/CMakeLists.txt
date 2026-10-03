@@ -38,6 +38,10 @@ smtg_add_vst3plugin(WetReducer
     source/voicearrow.cpp
     source/customviewcreator.h
     source/customviewcreator.cpp
+    source/ledmeterview.h
+    source/ledmeterview.cpp
+    source/numparse.h
+    source/meterlevel.h
 )
 
 if(SMTG_ENABLE_VSTGUI_SUPPORT)

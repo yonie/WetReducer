@@ -135,6 +135,11 @@ tresult PLUGIN_API WetReducerController::initialize(FUnknown* context)
     for (int b = 0; b < Reducer::kBands; ++b)
         parameters.addParameter(leds[b], nullptr, 0, 0.0, Vst::ParameterInfo::kIsReadOnly, kLedParam + b);
 
+    // IN L/R and OUT L/R, fed by the processor as dB (meterlevel.h). Read-only.
+    const Vst::TChar* meters[] = {STR16("Input Meter L"), STR16("Input Meter R"), STR16("Output Meter L"), STR16("Output Meter R")};
+    for (int m = 0; m < 4; ++m)
+        parameters.addParameter(meters[m], nullptr, 0, 0.0, Vst::ParameterInfo::kIsReadOnly, kInMeterL + m);
+
     parameters.addParameter(new FilterParameter(STR16("Bass from"), kLowEdgeParam, false));
     parameters.addParameter(new FilterParameter(STR16("Air up to"), kHighEdgeParam, true));
 

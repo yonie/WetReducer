@@ -77,6 +77,29 @@ void WetReducerProcessor::apply(Vst::ParamID id, double value)
 
 }
 
+//------------------------------------------------------------------------
+// IN L/R and OUT L/R to the panel, as dB (meterlevel.h) so a reading above 0 dBFS
+// survives the host's 0..1 clamp.
+void WetReducerProcessor::sendMeters(Vst::ProcessData& data, const float* blockPeak)
+{
+    const float decay = std::pow(kMeterDecay, static_cast<float>(data.numSamples));
+    for (int m = 0; m < 4; ++m)
+    {
+        meterPeak[m] = std::max(blockPeak[m], meterPeak[m] * decay);
+        const float v = Meter::encode(meterPeak[m]);
+        if (data.outputParameterChanges && v != sentMeter[m])
+        {
+            int32 index = 0;
+            if (auto* q = data.outputParameterChanges->addParameterData(kInMeterL + m, index))
+            {
+                int32 point = 0;
+                q->addPoint(0, v, point);
+            }
+            sentMeter[m] = v;
+        }
+    }
+}
+
 // The lamps blink: on for 60 ms each time a band's tone moves to a new note, then off - no
 // fade, no glow (Ronald: "why does it not just blink whenever it picks a new note"). A blink
 // is followed by at least 40 ms dark, so notes arriving faster still read as blinks. Brighter
@@ -135,10 +158,23 @@ tresult PLUGIN_API WetReducerProcessor::process(Vst::ProcessData& data)
     float *inL, *inR, *outL, *outR;
     if (!monoBus.begin(data.inputs[0], data.outputs[0], data.numSamples, inL, inR, outL, outR))
         return kResultOk;
+    // IN is read before processing: the buffers may be shared in place.
+    float blockPeak[4] = {};
+    for (int32 i = 0; i < data.numSamples; ++i)
+    {
+        blockPeak[0] = std::max(blockPeak[0], std::abs(inL[i]));
+        blockPeak[1] = std::max(blockPeak[1], std::abs(inR[i]));
+    }
     engine.process(inL, inR, outL, outR, data.numSamples);
+    for (int32 i = 0; i < data.numSamples; ++i)
+    {
+        blockPeak[2] = std::max(blockPeak[2], std::abs(outL[i]));
+        blockPeak[3] = std::max(blockPeak[3], std::abs(outR[i]));
+    }
     monoBus.end(data.outputs[0], data.numSamples, outL, outR);
     data.outputs[0].silenceFlags = 0;
     sendLeds(data);
+    sendMeters(data, blockPeak);
     return kResultOk;
 }
 // Saved state, version 1 - the format the first release ships with (prototype formats are gone,

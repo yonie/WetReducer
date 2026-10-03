@@ -7,6 +7,7 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 #include "reducerengine.h"
 #include "monobus.h"
+#include "meterlevel.h"
 #include "wetreducercids.h"
 
 namespace Yonie {
@@ -36,12 +37,19 @@ public:
 private:
     void apply(Steinberg::Vst::ParamID id, double value);
     void sendLeds(Steinberg::Vst::ProcessData& data);
+    void sendMeters(Steinberg::Vst::ProcessData& data, const float* blockPeak);
 
     ReducerEngine engine;
     Wet::MonoBus monoBus;
     ReducerEngine::Settings pending;
     double led[Reducer::kBands] = {};
     double sentLed[Reducer::kBands] = {};
+
+    // IN L/R and OUT L/R: instant attack, the line's fall-off (0.9995 a sample,
+    // raised to the block length so it runs at the same speed at any buffer size).
+    static constexpr float kMeterDecay = 0.9995f;
+    float meterPeak[4] = {};
+    float sentMeter[4] = {-1.f, -1.f, -1.f, -1.f};
     int seenChanges[Reducer::kBands] = {};
     int blinkLeft[Reducer::kBands] = {-1 << 20, -1 << 20, -1 << 20, -1 << 20, -1 << 20};
 };

@@ -29,8 +29,12 @@ enum WetReducerParams : Steinberg::Vst::ParamID
     kLowEdgeParam  = 20,    // where BASS starts, B0..B9; below it the music passes as it is. Off at the bottom
     kHighEdgeParam = 21,    // where AIR ends, B0..B9; above it the music passes as it is. Off at the top
     kVoicesParam   = 22,    // tones per band, 1..8; the VOICES display with its up and down buttons
+    kInMeterL      = 23,    // 23..26: read-only, IN L/R and OUT L/R peak, dB-encoded (meterlevel.h)
+    kInMeterR      = 24,
+    kOutMeterL     = 25,
+    kOutMeterR     = 26,
 
-    kParamCount    = 23
+    kParamCount    = 27
 };
 
 //------------------------------------------------------------------------

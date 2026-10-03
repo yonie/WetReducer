@@ -10,6 +10,7 @@
 #include "vstgui/uidescription/iuidescription.h"
 
 #include "steppedknob.h"
+#include "ledmeterview.h"
 
 namespace Yonie {
 
@@ -25,6 +26,27 @@ public:
     VSTGUI::IdStringPtr getViewName() const override { return "SteppedKnob"; }
     VSTGUI::IdStringPtr getBaseViewName() const override { return "CAnimKnob"; }
     VSTGUI::UTF8StringPtr getDisplayName() const override { return "Stepped Knob"; }
+
+    VSTGUI::CView* create(const VSTGUI::UIAttributes& attributes,
+                          const VSTGUI::IUIDescription* description) const override;
+    bool apply(VSTGUI::CView* view, const VSTGUI::UIAttributes& attributes,
+               const VSTGUI::IUIDescription* description) const override;
+    bool getAttributeNames(StringList& attributeNames) const override;
+    AttrType getAttributeType(const string& attributeName) const override;
+    bool getAttributeValue(VSTGUI::CView* view, const string& attributeName,
+                           string& stringValue,
+                           const VSTGUI::IUIDescription* desc) const override;
+};
+
+//------------------------------------------------------------------------
+class LEDMeterViewCreator : public VSTGUI::ViewCreatorAdapter
+{
+public:
+    LEDMeterViewCreator();
+
+    VSTGUI::IdStringPtr getViewName() const override { return "LEDMeterView"; }
+    VSTGUI::IdStringPtr getBaseViewName() const override { return "CControl"; }
+    VSTGUI::UTF8StringPtr getDisplayName() const override { return "LED Meter View"; }
 
     VSTGUI::CView* create(const VSTGUI::UIAttributes& attributes,
                           const VSTGUI::IUIDescription* description) const override;
