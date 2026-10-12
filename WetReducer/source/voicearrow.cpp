@@ -6,6 +6,7 @@
 #include "reducerengine.h"
 
 #include "vstgui/lib/cdrawcontext.h"
+#include "stripframes.h"
 
 #include <algorithm>
 
@@ -21,7 +22,7 @@ VoiceArrow::VoiceArrow(const CRect& size, CBitmap* f, int dir) : CControl(size, 
 void VoiceArrow::draw(CDrawContext* context)
 {
     if (frames)
-        frames->draw(context, getViewSize(), CPoint(0, pressed ? frames->getHeight() / 2.0 : 0.0));
+        Strip::draw(context, frames, getViewSize(), pressed ? 1 : 0);
     setDirty(false);
 }
 

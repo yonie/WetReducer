@@ -59,7 +59,7 @@ smtg_target_configure_version_file(WetReducer)
 if(SMTG_MAC)
     smtg_target_set_bundle(WetReducer
         BUNDLE_IDENTIFIER org.yonie.vst3.wetreducer
-        COMPANY_NAME "Yonie"
+        COMPANY_NAME "WET VST"
     )
 elseif(SMTG_WIN)
     target_sources(WetReducer PRIVATE resource/win32resource.rc)

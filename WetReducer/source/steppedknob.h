@@ -47,6 +47,7 @@ public:
     int getCoarseStep() const { return coarseStep; }
 
     // overrides
+    void draw(VSTGUI::CDrawContext* context) override;
     void onMouseWheelEvent(VSTGUI::MouseWheelEvent& event) override;
     void onKeyboardEvent(VSTGUI::KeyboardEvent& event) override;
     void setValue(float val) override;

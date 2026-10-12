@@ -14,7 +14,7 @@
 using namespace Steinberg::Vst;
 using namespace Yonie;
 
-BEGIN_FACTORY_DEF ("Yonie",
+BEGIN_FACTORY_DEF ("WET VST",
                    "https://wetvst.com",
                    "mailto:contact@wetvst.com")
 

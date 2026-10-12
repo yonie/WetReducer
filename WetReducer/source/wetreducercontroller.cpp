@@ -10,6 +10,7 @@
 #include "steppedknob.h"
 #include "bandled.h"
 #include "voicearrow.h"
+#include "stripviews.h"
 #include "customviewcreator.h"
 #include "vstgui/uidescription/uiattributes.h"
 
@@ -245,6 +246,10 @@ VSTGUI::CView* WetReducerController::createCustomView(VSTGUI::UTF8StringPtr name
         return d;
     };
 
+    if (n == "StripButton")
+        return new StripButton(rect);
+    if (n == "StripMovie")
+        return new StripMovie(rect);
     if (n == "BandLed")
         return new BandLed(rect, bitmap("bitmap"));
     if (n == "VoiceArrow")

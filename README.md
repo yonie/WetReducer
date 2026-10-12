@@ -4,23 +4,23 @@
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 [![Version](https://img.shields.io/github/v/release/yonie/WetReducer?label=version&color=orange)](https://github.com/yonie/WetReducer/releases/latest)
 
-This is a creative plugin. Use it to decompose your mix or recording into its raw sine or square waves. The amount of voices and the response determine how much of the original material is reconstructed, and you can also blend the original back in. Solo each band to find the right frequencies and get creative, or just watch the dancing LEDs.
+Creatively reduce fidelity of a track or mix by replacing audio bands with sine or square waves.
 
 **Download:** [wetvst.com/wetreducer](https://wetvst.com/wetreducer/)
 
 [![WetReducer Plugin Screenshot](docs/panel.png)](https://wetvst.com/wetreducer/)
 
-> **Panel too big or too small?** Right-click anywhere on the panel and pick **UI Zoom** - 75%, 100% or 125%.
+> **Panel too big or too small?** Right-click anywhere on the panel and pick **UI Zoom**, from 50% to 125%.
 
 ## Features
 
-- **Five bands**: BASS, BODY, VOICE, PRESENCE and AIR, each rebuilt from its own loudest notes
-- **One knob per band**: from the original sound at 0, through all sine at noon, to all square at full
-- **Snapped to notes**: every tone sits on the nearest semitone, so the result is in tune with itself
-- **One frequency strip**: six handles on a semitone grid - where BASS starts, the four splits between the bands, where AIR ends. Outside the two outer handles the music passes through untouched
-- **VOICES**: how many notes each band plays, 1 to 8. The lowest-pitched of a band's strongest notes are kept; notes more than 12 dB under the loudest are left out
-- **RESPONSE**: SLOW waits for a note to last half a second before following it; FAST follows within 50 ms
-- **Solo and a note LED per band**: the LED blinks every time its band picks a new note
+- Use five bands to creatively change the sound of your mix by replacing existing parts with synth sounds
+- Blend the original sound in with a subtle synthesizer sine wave or get aggressive by pushing into a mean square wave!
+- Easily set the channel bands by dragging the sliders on the chromatic bar
+- Set how fast a band follows the material using the slow or fast response toggle
+- Set a low number of voices for a real reduced sound or go up to 8 voices for a high resolution digital version of your track
+- Dial in your sound by soloing a band and watching the LEDs blink on each new detected note
+
 
 ## Download & Installation
 
@@ -80,7 +80,7 @@ The plug-in is signed and notarised by Apple, so macOS opens it without a warnin
 - **Knobs**: drag, or the wheel - one detent per notch, a quarter detent with Shift held
 - **Strip handles**: drag, or the wheel over the strip - one semitone per notch for the handle nearest the pointer
 - **VOICES**: the up and down buttons beside the display
-- **Right-click the panel**: UI Zoom - 75%, 100% or 125%
+- **Right-click the panel**: UI Zoom, from 50% to 125%
 
 ## Building from Source
 

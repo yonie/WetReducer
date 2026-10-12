@@ -417,7 +417,7 @@
     ],
     "y": 209.0,
     "size": [
-     50,
+     49,
      69
     ],
     "hit": [
@@ -428,12 +428,12 @@
    {
     "file": "cap_3.png",
     "anchor": [
-     24.67,
+     26.67,
      35.0
     ],
     "y": 209.0,
     "size": [
-     50,
+     52,
      71
     ],
     "hit": [
@@ -483,7 +483,8 @@
     60.0,
     6.0
    ],
-   "segments": 5
+   "segments": 5,
+   "fill": 0.32
   },
   "kInMeterR": {
    "rect": [
@@ -492,7 +493,8 @@
     60.0,
     6.0
    ],
-   "segments": 5
+   "segments": 5,
+   "fill": 0.32
   },
   "kOutMeterL": {
    "rect": [
@@ -501,7 +503,8 @@
     60.0,
     6.0
    ],
-   "segments": 5
+   "segments": 5,
+   "fill": 0.32
   },
   "kOutMeterR": {
    "rect": [
@@ -510,7 +513,8 @@
     60.0,
     6.0
    ],
-   "segments": 5
+   "segments": 5,
+   "fill": 0.32
   }
  }
 }

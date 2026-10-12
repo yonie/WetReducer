@@ -26,25 +26,25 @@
 	</control-tags>
 	<bitmaps>
 		<bitmap name="backplate" path="backplate.png"/>
-		<bitmap name="knob_bass" path="knob_bass.png" multiframe-size="96, 108" multiframe-num-frames="41" mulitframe-frames-per-row="1"/>
-		<bitmap name="knob_body" path="knob_body.png" multiframe-size="97, 108" multiframe-num-frames="41" mulitframe-frames-per-row="1"/>
-		<bitmap name="knob_voice" path="knob_voice.png" multiframe-size="97, 108" multiframe-num-frames="41" mulitframe-frames-per-row="1"/>
-		<bitmap name="knob_presence" path="knob_presence.png" multiframe-size="97, 109" multiframe-num-frames="41" mulitframe-frames-per-row="1"/>
-		<bitmap name="knob_air" path="knob_air.png" multiframe-size="98, 108" multiframe-num-frames="41" mulitframe-frames-per-row="1"/>
-		<bitmap name="solo_bass" path="solo_bass.png" multiframe-size="57, 41" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="solo_body" path="solo_body.png" multiframe-size="60, 41" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="solo_voice" path="solo_voice.png" multiframe-size="60, 43" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="solo_presence" path="solo_presence.png" multiframe-size="61, 41" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="solo_air" path="solo_air.png" multiframe-size="62, 43" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="led_bass" path="led_bass.png" multiframe-size="39, 37" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="led_body" path="led_body.png" multiframe-size="40, 40" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="led_voice" path="led_voice.png" multiframe-size="41, 40" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="led_presence" path="led_presence.png" multiframe-size="40, 37" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="led_air" path="led_air.png" multiframe-size="39, 45" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="lcd" path="lcd.png" multiframe-size="43, 59" multiframe-num-frames="8" mulitframe-frames-per-row="1"/>
-		<bitmap name="arrow_up" path="arrow_up.png" multiframe-size="39, 31" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="arrow_down" path="arrow_down.png" multiframe-size="41, 30" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
-		<bitmap name="toggle" path="toggle.png" multiframe-size="94, 89" multiframe-num-frames="2" mulitframe-frames-per-row="1"/>
+		<bitmap name="knob_bass" path="knob_bass.png"/>
+		<bitmap name="knob_body" path="knob_body.png"/>
+		<bitmap name="knob_voice" path="knob_voice.png"/>
+		<bitmap name="knob_presence" path="knob_presence.png"/>
+		<bitmap name="knob_air" path="knob_air.png"/>
+		<bitmap name="solo_bass" path="solo_bass.png"/>
+		<bitmap name="solo_body" path="solo_body.png"/>
+		<bitmap name="solo_voice" path="solo_voice.png"/>
+		<bitmap name="solo_presence" path="solo_presence.png"/>
+		<bitmap name="solo_air" path="solo_air.png"/>
+		<bitmap name="led_bass" path="led_bass.png"/>
+		<bitmap name="led_body" path="led_body.png"/>
+		<bitmap name="led_voice" path="led_voice.png"/>
+		<bitmap name="led_presence" path="led_presence.png"/>
+		<bitmap name="led_air" path="led_air.png"/>
+		<bitmap name="lcd" path="lcd.png"/>
+		<bitmap name="arrow_up" path="arrow_up.png"/>
+		<bitmap name="arrow_down" path="arrow_down.png"/>
+		<bitmap name="toggle" path="toggle.png"/>
 		<bitmap name="cap_0" path="cap_0.png"/>
 		<bitmap name="cap_1" path="cap_1.png"/>
 		<bitmap name="cap_2" path="cap_2.png"/>
@@ -54,28 +54,28 @@
 	</bitmaps>
 	<template name="view" class="CViewContainer" origin="0, 0" size="1520, 280" minSize="1520, 280" maxSize="1520, 280" bitmap="backplate" transparent="false">
 		<view class="SteppedKnob" control-tag="kB0" origin="442, 53" size="96, 108" bitmap="knob_bass" step-count="41" coarse-step="4" angle-start="0" angle-range="0" transparent="true"/>
-		<view class="COnOffButton" control-tag="kS0" origin="385, 147" size="57, 41" bitmap="solo_bass" transparent="true"/>
+		<view class="COnOffButton" custom-view-name="StripButton" control-tag="kS0" origin="385, 147" size="57, 41" bitmap="solo_bass" transparent="true"/>
 		<view class="CControl" custom-view-name="BandLed" control-tag="kL0" origin="554, 19" size="39, 37" bitmap="led_bass" transparent="true"/>
 		<view class="SteppedKnob" control-tag="kB1" origin="656, 53" size="97, 108" bitmap="knob_body" step-count="41" coarse-step="4" angle-start="0" angle-range="0" transparent="true"/>
-		<view class="COnOffButton" control-tag="kS1" origin="596, 147" size="60, 41" bitmap="solo_body" transparent="true"/>
+		<view class="COnOffButton" custom-view-name="StripButton" control-tag="kS1" origin="596, 147" size="60, 41" bitmap="solo_body" transparent="true"/>
 		<view class="CControl" custom-view-name="BandLed" control-tag="kL1" origin="768, 17" size="40, 40" bitmap="led_body" transparent="true"/>
 		<view class="SteppedKnob" control-tag="kB2" origin="870, 53" size="97, 108" bitmap="knob_voice" step-count="41" coarse-step="4" angle-start="0" angle-range="0" transparent="true"/>
-		<view class="COnOffButton" control-tag="kS2" origin="810, 145" size="60, 43" bitmap="solo_voice" transparent="true"/>
+		<view class="COnOffButton" custom-view-name="StripButton" control-tag="kS2" origin="810, 145" size="60, 43" bitmap="solo_voice" transparent="true"/>
 		<view class="CControl" custom-view-name="BandLed" control-tag="kL2" origin="981, 17" size="41, 40" bitmap="led_voice" transparent="true"/>
 		<view class="SteppedKnob" control-tag="kB3" origin="1084, 52" size="97, 109" bitmap="knob_presence" step-count="41" coarse-step="4" angle-start="0" angle-range="0" transparent="true"/>
-		<view class="COnOffButton" control-tag="kS3" origin="1023, 147" size="61, 41" bitmap="solo_presence" transparent="true"/>
+		<view class="COnOffButton" custom-view-name="StripButton" control-tag="kS3" origin="1023, 147" size="61, 41" bitmap="solo_presence" transparent="true"/>
 		<view class="CControl" custom-view-name="BandLed" control-tag="kL3" origin="1195, 16" size="40, 37" bitmap="led_presence" transparent="true"/>
 		<view class="SteppedKnob" control-tag="kB4" origin="1298, 53" size="98, 108" bitmap="knob_air" step-count="41" coarse-step="4" angle-start="0" angle-range="0" transparent="true"/>
-		<view class="COnOffButton" control-tag="kS4" origin="1236, 147" size="62, 43" bitmap="solo_air" transparent="true"/>
+		<view class="COnOffButton" custom-view-name="StripButton" control-tag="kS4" origin="1236, 147" size="62, 43" bitmap="solo_air" transparent="true"/>
 		<view class="CControl" custom-view-name="BandLed" control-tag="kL4" origin="1411, 13" size="39, 45" bitmap="led_air" transparent="true"/>
-		<view class="CMovieBitmap" control-tag="kVoices" origin="109, 121" size="43, 59" bitmap="lcd" transparent="true"/>
+		<view class="CMovieBitmap" custom-view-name="StripMovie" control-tag="kVoices" origin="109, 121" size="43, 59" bitmap="lcd" transparent="true"/>
 		<view class="CControl" custom-view-name="VoiceArrow" control-tag="kVoices" origin="152, 119" size="39, 31" bitmap="arrow_up" direction="1" transparent="true"/>
 		<view class="CControl" custom-view-name="VoiceArrow" control-tag="kVoices" origin="152, 150" size="41, 30" bitmap="arrow_down" direction="-1" transparent="true"/>
-		<view class="COnOffButton" control-tag="kResp" origin="235, 112" size="94, 89" bitmap="toggle" transparent="true"/>
-		<view class="LEDMeterView" control-tag="kInMeterL" origin="112, 202.25" size="60, 6" num-segments="5" segment-gap="3" horizontal="true" db-min="-36" db-max="0" db-thresholds="-36, -24, -12, -6, 0" db-encoded="true" zone-yellow="3" zone-red="4" transparent="false"/>
-		<view class="LEDMeterView" control-tag="kInMeterR" origin="112, 211.75" size="60, 6" num-segments="5" segment-gap="3" horizontal="true" db-min="-36" db-max="0" db-thresholds="-36, -24, -12, -6, 0" db-encoded="true" zone-yellow="3" zone-red="4" transparent="false"/>
-		<view class="LEDMeterView" control-tag="kOutMeterL" origin="244, 202.25" size="60, 6" num-segments="5" segment-gap="3" horizontal="true" db-min="-36" db-max="0" db-thresholds="-36, -24, -12, -6, 0" db-encoded="true" zone-yellow="3" zone-red="4" transparent="false"/>
-		<view class="LEDMeterView" control-tag="kOutMeterR" origin="244, 211.75" size="60, 6" num-segments="5" segment-gap="3" horizontal="true" db-min="-36" db-max="0" db-thresholds="-36, -24, -12, -6, 0" db-encoded="true" zone-yellow="3" zone-red="4" transparent="false"/>
-		<view class="CView" custom-view-name="XoverStrip" origin="346, 171" size="1138, 78" track-x0="395" track-x1="1435" line-y="223" line-h="3" line-inset="1.5" cap-y="209" band-colors="#ca4c1a,#8278d7,#b77600,#0c8b5e,#2b75cb" cap-0="cap_0" cap-0-anchor="24.67, 35" cap-1="cap_1" cap-1-anchor="25, 36" cap-2="cap_2" cap-2-anchor="24.33, 34" cap-3="cap_3" cap-3-anchor="24.67, 35" cap-4="cap_4" cap-4-anchor="25, 35" cap-5="cap_5" cap-5-anchor="25.33, 34" transparent="true"/>
+		<view class="COnOffButton" custom-view-name="StripButton" control-tag="kResp" origin="235, 112" size="94, 89" bitmap="toggle" transparent="true"/>
+		<view class="LEDMeterView" control-tag="kInMeterL" origin="114.16, 202.25" size="55.68, 6" num-segments="5" segment-gap="4.32" horizontal="true" transparent="false"/>
+		<view class="LEDMeterView" control-tag="kInMeterR" origin="114.16, 211.75" size="55.68, 6" num-segments="5" segment-gap="4.32" horizontal="true" transparent="false"/>
+		<view class="LEDMeterView" control-tag="kOutMeterL" origin="246.16, 202.25" size="55.68, 6" num-segments="5" segment-gap="4.32" horizontal="true" transparent="false"/>
+		<view class="LEDMeterView" control-tag="kOutMeterR" origin="246.16, 211.75" size="55.68, 6" num-segments="5" segment-gap="4.32" horizontal="true" transparent="false"/>
+		<view class="CView" custom-view-name="XoverStrip" origin="346, 171" size="1138, 78" track-x0="395" track-x1="1435" line-y="223" line-h="3" line-inset="1.5" cap-y="209" band-colors="#ca4c1a,#8278d7,#b77600,#0c8b5e,#2b75cb" cap-0="cap_0" cap-0-anchor="24.67, 35" cap-1="cap_1" cap-1-anchor="25, 36" cap-2="cap_2" cap-2-anchor="24.33, 34" cap-3="cap_3" cap-3-anchor="26.67, 35" cap-4="cap_4" cap-4-anchor="25, 35" cap-5="cap_5" cap-5-anchor="25.33, 34" transparent="true"/>
 	</template>
 </vstgui-ui-description>

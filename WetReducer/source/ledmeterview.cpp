@@ -24,43 +24,15 @@ int LEDMeterView::litSegments() const
 {
     const float level = getValueNormalized();
 
-    // A dB-encoded reading: 0 is the floor, so nothing is lit.
-    auto dbOf = [&](float v) {
-        return dbEncoded ? Meter::decodeDb(v) : 20.0 * std::log10(static_cast<double>(v));
-    };
-
-    int litCount;
-    if (!thresholds.empty() && static_cast<int>(thresholds.size()) == numSegments)
+    // Gain reduction: a linear share of the printed range.
+    if (reduction)
     {
-        // One printed number per segment, so the ladder can be read straight
-        // off the panel however unevenly the scale is spaced.
-        if (level <= 1e-6f)
-            return 0;
-        const double db = dbOf(level);
-        litCount = 0;
-        for (int i = 0; i < numSegments; ++i)
-            if (db >= thresholds[i])
-                litCount = i + 1;
-    }
-    else if (dbScale)
-    {
-        // One segment per printed number. Segment i counts from the bottom and
-        // stands for dbLo + i*step, so it lights when the signal has reached
-        // the value written beside it.
-        if (level <= 1e-6f)
-            return 0;
-        const double db = dbOf(level);
-        const double step = (dbHi - dbLo) / (numSegments - 1);
-        litCount = static_cast<int>(std::floor((db - dbLo) / step)) + 1;
-    }
-    else
-    {
-        litCount = static_cast<int>(level * numSegments + 0.5f);
+        const int n = static_cast<int>(level * numSegments + 0.5f);
+        return n < 0 ? 0 : n > numSegments ? numSegments : n;
     }
 
-    if (litCount > numSegments) litCount = numSegments;
-    if (litCount < 0) litCount = 0;
-    return litCount;
+    // A level meter: the line's one scale, only the block count is ours (meterlevel.h).
+    return Meter::litSegments(level, numSegments);
 }
 
 //------------------------------------------------------------------------
@@ -137,36 +109,16 @@ CRect LEDMeterView::calculateSegmentRect(int segmentIndex) const
 }
 
 //------------------------------------------------------------------------
-// Which zone a segment belongs to: 0 green, 1 yellow, 2 red.
-int LEDMeterView::zoneOf(int segmentIndex) const
-{
-    // Measured boundaries win when the panel supplied them.
-    if (zoneYellow >= 0 && zoneRed >= 0)
-    {
-        if (segmentIndex >= zoneRed) return 2;
-        if (segmentIndex >= zoneYellow) return 1;
-        return 0;
-    }
-
-    // Otherwise the old proportional split: 12 segments as 0-7 green,
-    // 8-9 yellow, 10-11 red, scaled to whatever count is in use.
-    const float position = static_cast<float>(segmentIndex) / (numSegments - 1);
-    if (position < 0.67f) return 0;
-    if (position < 0.83f) return 1;
-    return 2;
-}
-
-//------------------------------------------------------------------------
 CColor LEDMeterView::getLitColor(int segmentIndex) const
 {
     if (reduction)
         return amberLit;
 
-    switch (zoneOf(segmentIndex))
+    switch (Meter::segmentZone(segmentIndex, numSegments))
     {
-        case 0:  return greenLit;
-        case 1:  return yellowLit;
-        default: return redLit;
+        case Meter::kGreen:  return greenLit;
+        case Meter::kYellow: return yellowLit;
+        default:             return redLit;
     }
 }
 
@@ -176,11 +128,11 @@ CColor LEDMeterView::getDarkColor(int segmentIndex) const
     if (reduction)
         return amberDark;
 
-    switch (zoneOf(segmentIndex))
+    switch (Meter::segmentZone(segmentIndex, numSegments))
     {
-        case 0:  return greenDark;
-        case 1:  return yellowDark;
-        default: return redDark;
+        case Meter::kGreen:  return greenDark;
+        case Meter::kYellow: return yellowDark;
+        default:             return redDark;
     }
 }
 

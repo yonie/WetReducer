@@ -3,6 +3,7 @@
 //------------------------------------------------------------------------
 
 #include "steppedknob.h"
+#include "stripframes.h"
 
 #include <cmath>
 
@@ -191,4 +192,21 @@ CMouseEventResult SteppedKnob::onMouseMoved(CPoint& where, const CButtonState& b
 }
 
 //------------------------------------------------------------------------
+//------------------------------------------------------------------------
+// A plain bitmap is a filmstrip with gutters (stripframes.h); a multi-frame
+// bitmap is drawn the stock way.
+void SteppedKnob::draw(VSTGUI::CDrawContext* context)
+{
+    auto* bitmap = getDrawBackground();
+    if (!bitmap || dynamic_cast<VSTGUI::CMultiFrameBitmap*>(bitmap))
+    {
+        CAnimKnob::draw(context);
+        return;
+    }
+    const auto& r = getViewSize();
+    const int count = Strip::frameCount(bitmap, r.getHeight());
+    Strip::draw(context, bitmap, r, Strip::frameFor(getValueNormalized(), count));
+    setDirty(false);
+}
+
 } // namespace Yonie
