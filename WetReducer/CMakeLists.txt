@@ -8,7 +8,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "")
 set(vst3sdk_SOURCE_DIR "../vst3sdk")
 
 project(WetReducer
-    VERSION 0.1.0.0
+    VERSION 1.0.0.0
     DESCRIPTION "WetReducer VST 3 Plug-in"
 )
 
