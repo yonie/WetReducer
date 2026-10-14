@@ -254,18 +254,11 @@ jobs:
 
             Product page: https://wetvst.com/wetreducer/
 
-            A creative plug-in: it splits a mix or recording into five bands - BASS, BODY, VOICE, PRESENCE and AIR - and rebuilds each one from its own loudest notes, as sine or square waves snapped to the nearest semitone.
-
-            - One stepped knob per band: 0 the original, noon all sine, full all square. Hold Shift for four times finer.
-            - One frequency strip with six handles on a semitone grid: where BASS starts, the four splits, where AIR ends.
-            - VOICES: 1 to 8 notes per band, on a red seven-segment display.
-            - RESPONSE: a flick switch, slow or fast note following.
-            - SOLO and a note LED per band; the LED blinks on every new note.
-            - Mono and stereo, in and out. WetReducer listens ahead to find each note, so it reports 8192 samples of latency for your DAW to compensate.
+            WetReducer is a free and open source creative plug-in. Use five bands to replace parts of your mix with synth sounds. Blend the original with a subtle synthesizer sine wave, or get aggressive by pushing it into a mean square wave. Every band snaps to the nearest note, so it's basically a multiband autotune lol.
 
             ### Resizing the panel
 
-            Right-click anywhere on the panel and pick **UI Zoom** - 75%, 100% or 125%.
+            Right-click anywhere on the panel and pick **UI Zoom** - 50%, 75%, 100% or 125%.
 
             ### Installation
 
