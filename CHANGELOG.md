@@ -4,6 +4,16 @@ All notable changes to WetReducer are recorded here, in [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-20
+
+### Fixed
+- Linux: the plug-in now loads on systems without `libxcb-cursor` installed, such as a fresh Linux Mint.
+
+### Changed
+- The sound and saved settings are unchanged.
+
+## [1.0.0] - 2026-10-14
+
 ### Added
 
 - Five bands - BASS, BODY, VOICE, PRESENCE, AIR - each rebuilt from its own loudest notes as sine or square waves snapped to the nearest semitone.

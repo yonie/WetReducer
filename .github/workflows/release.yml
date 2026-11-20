@@ -61,7 +61,7 @@ jobs:
           retention-days: 1
 
   build-macos:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -132,7 +132,7 @@ jobs:
 
   merge-and-release:
     needs: [build-windows, build-linux, build-macos, build-au]
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -250,11 +250,14 @@ jobs:
           # The Installation block below is REQUIRED and stays: people land on the
           # release page from an aggregator with no idea what to do with a .vst3.
           body: |
-            **WetReducer 1.0.0**
+            **WetReducer 1.0.1**
 
             Product page: https://wetvst.com/wetreducer/
 
-            WetReducer is a free and open source creative plug-in. Use five bands to replace parts of your mix with synth sounds. Blend the original with a subtle synthesizer sine wave, or get aggressive by pushing it into a mean square wave. Every band snaps to the nearest note, so it's basically a multiband autotune lol.
+            What's new:
+
+            - Linux: the plug-in now loads on systems without `libxcb-cursor` installed, such as a fresh Linux Mint.
+            - The sound and saved settings are unchanged.
 
             ### Resizing the panel
 
